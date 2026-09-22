@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第4章 実行環境境界 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>第4章 — 実行環境境界</h1>
+  <p class="subtitle">箱ごと壊されたら何が残るのか</p>
+
+  <div class="badges">
+    <span class="badge masvs">MASVS-CRYPTO-1</span>
+    <span class="badge masvs">MASVS-CRYPTO-2</span>
+    <span class="badge">Basic 30分</span>
+    <span class="badge">Standard 1〜2時間</span>
+    <span class="badge">Deep 任意</span>
+  </div>
+
+  <div class="callout note">
+    <strong>この章の問い</strong><br>
+    第1〜3章で見てきた防御は、どれも「アプリのプロセスを取られたらそこで終わり」でした。
+    では、端末の持ち主自身が敵になる状況で、アプリは何か守れるのでしょうか。
+    守れるとしたら、それは何をどこまで守っているのでしょうか。
+  </div>
+
+  <!-- ===================== ① 座学 ===================== -->
+  <div class="primer">
+    <h2>この章で触る仕組み</h2>
+    <p class="primer-meta">読むだけ・7分。端末の持ち主自身が敵になる場合の話です。</p>
+    <p>端末にデータを残すとき、ログイン用のトークンやメモのように、そのままでは置きたくないものがあります。
+      暗号化すれば読めなくなりますが、暗号化には鍵が要り、その鍵もまた端末のどこかに置くことになります。
+      <b>Android Keystore</b> は、この鍵の置き場所をアプリの外、つまり OS の側で引き受けるための、
+      ごく普通の仕組みです。端末によっては、その先で
+      OS から隔離された実行環境（TEE）や専用チップ（StrongBox）が使われます。
+      <b>使われるかどうかは端末次第なので、この章では実測値を表示して確かめます。</b></p>
+    <figure class="fig">
+      <svg viewBox="0 0 720 300" role="img" aria-label="アプリのプロセスから Keystore への3つの依頼のうち、鍵の持ち出しだけが止まることを示した図">
+        <rect class="plate" x="16" y="40" width="290" height="230" rx="8"/>
+        <text class="t-b" x="34" y="68">アプリのプロセス</text>
+        <text class="t-sm" x="34" y="88">攻撃者に取られうる側</text>
+
+        <text class="t" x="34" y="128">① 作って</text>
+        <text class="t-sm mono" x="34" y="148">KeyGenParameterSpec</text>
+
+        <text class="t" x="34" y="182">② 鍵をください</text>
+        <text class="t-sm mono" x="34" y="202">getEncoded()</text>
+
+        <text class="t" x="34" y="236">③ 復号して</text>
+        <text class="t-sm mono" x="34" y="256">cipher.doFinal()</text>
+
+        <rect class="wall" x="420" y="40" width="284" height="230" rx="8"/>
+        <text class="t-b" x="438" y="68">Android Keystore</text>
+        <text class="t-sm" x="438" y="88">中はアプリから見えない</text>
+
+        <rect class="card" x="438" y="110" width="248" height="56" rx="6"/>
+        <text class="t-sm" x="452" y="134">鍵の本体</text>
+        <text class="t-sm mono" x="452" y="154">alias = tee_demo_key</text>
+
+        <text class="t-sm" x="438" y="204">頼まれた計算はやってくれる</text>
+        <text class="t-sm" x="438" y="230">ただし鍵そのものは渡さない</text>
+
+        <line class="pass" x1="312" y1="140" x2="410" y2="140"/>
+        <polygon points="414,140 404,135 404,145" fill="var(--success)"/>
+        <text class="t-ok" x="330" y="132">通る</text>
+
+        <line class="block" x1="312" y1="194" x2="348" y2="194"/>
+        <line class="block" x1="356" y1="184" x2="376" y2="204"/>
+        <line class="block" x1="376" y1="184" x2="356" y2="204"/>
+        <text class="t-ng" x="326" y="186">止まる</text>
+
+        <line class="pass" x1="312" y1="248" x2="410" y2="248"/>
+        <polygon points="414,248 404,243 404,253" fill="var(--success)"/>
+        <text class="t-ok" x="330" y="240">通る</text>
+
+        <text class="t-sm" x="16" y="292">止まるのは真ん中の1本だけです。上と下は、頼めば通ります。</text>
+      </svg>
+      <figcaption>
+        鍵に関わる操作は、生成・持ち出し・使用の3つです。
+        Keystore が引き受けているのは保管で、依頼そのものを断る仕組みではありません
+        （断らせたい場合は、手順11 で条件を付けます）。
+      </figcaption>
+    </figure>
+
+    <div class="qa">
+      <p class="qa-q">Q1. 暗号化すれば読めなくなります。では、鍵はどこに置きますか。</p>
+
+      <p class="qa-a">コードに書くか、OS に預けるかの2択です。効いてくるのは<b>置き場所</b>のほうです。</p>
+
+      <p><b>対称鍵暗号</b>は同じ鍵で暗号化と復号をします。速くて扱いやすいのですが、
+      鍵が漏れた時点で暗号文は読まれます。だから設計で効いてくるのは「どう暗号化するか」よりも
+      鍵をどこに置くかになります。</p>
+
+      <p>どう暗号化するかにも差はあります。<code>ECB</code> は同じ平文が毎回まったく同じ暗号文になるので、
+      中身が読めなくても「前と同じものを送った」ことが分かってしまいます。
+      <code>GCM</code> は毎回変わる値（IV）を混ぜるため暗号文も毎回変わり、改竄検知も付きます。
+      この違いは手順4 で実際に見ます。</p>
+    </div>
+
+    <div class="qa">
+      <p class="qa-q">Q2. 鍵をアプリの外に置けますか。</p>
+
+      <p class="qa-a">置けます。<b>Android Keystore</b> に作らせると、アプリは<b>名前でしか鍵を指せなくなります</b>。</p>
+
+      <p>アプリは <code>KeyGenParameterSpec</code> で「AES の鍵を <code>tee_demo_key</code> という名前で、
+      この条件で使えるように作ってほしい」と頼み、以後はその名前（alias）だけで鍵を指します。
+      鍵の中身を取りに行く <code>getEncoded()</code> は <code>null</code> を返します。</p>
+
+      <p>実際にどこに置かれているかは端末次第です。
+      OS から隔離された実行環境（<b>TEE</b>）や専用のチップ（<b>StrongBox</b>）かどうかは、
+      <code>KeyInfo</code> の <code>getSecurityLevel()</code> で分かります。
+      エミュレータでは <code>SOFTWARE</code> と出るのが普通です。</p>
+    </div>
+
+    <div class="qa">
+      <p class="qa-q">Q3. 取り出せないなら、もう安全ですか。</p>
+
+      <p class="qa-a">言えません。<b>鍵の「保持」と「使用」は別物</b>だからです。</p>
+
+      <p>鍵を渡してもらえなくても、「この鍵で復号して」と頼むことはできます。
+      頼めるのはその鍵を作ったアプリ自身です。
+      裏を返すと、アプリのプロセスとして動ける相手には、
+      鍵を見せないまま結果だけを渡すことになります。</p>
+
+      <p class="who">だから「何から守るつもりなのか」を決めないと、この問いには答えられません。
+      この章から持ち帰ってもらいたいのは、正直なところここ1つだけです。</p>
+    </div>
+    <p class="who"><b>守っているのは誰か：</b><b>OS（Android Keystore）、端末によってはハードウェア</b>。
+      ただし、アプリのプロセスそのものを取られた場合に
+      「鍵を使わせない」ところまでは面倒を見てくれません。</p>
+
+    <details class="hint terms">
+      <summary>用語だけをもう一度並べる（問答で出たものの一覧。あとで引く用）</summary>
+    <dl>
+      <dt>対称鍵暗号と、鍵の置き場所</dt>
+      <dd>同じ鍵で暗号化と復号をする方式です。速くて扱いやすいので広く使われますが、
+        鍵が漏れた時点で暗号文は読まれます。だから設計で効いてくるのは「どう暗号化するか」よりも
+        <b>「鍵をどこに置くか」</b>のほうです。</dd>
+
+      <dt>ECB と GCM</dt>
+      <dd><code>ECB</code> は同じ平文が毎回まったく同じ暗号文になるので、
+        中身が読めなくても「前と同じものを送った」ことが分かってしまいます。
+        <code>GCM</code> は毎回変わる値（IV）を混ぜるため暗号文も毎回変わり、改竄検知も付きます。</dd>
+
+      <dt>Android Keystore</dt>
+      <dd>鍵を生成して保管する OS の金庫です。アプリは <code>KeyGenParameterSpec</code> で
+        「AES の鍵を <code>tee_demo_key</code> という名前で、この条件で使えるように作ってほしい」と頼み、
+        以後は<b>その名前（alias）だけ</b>で鍵を指します。<b>アプリは鍵の中身を取り出せません。</b>
+        できるのは「この鍵で暗号化して」と OS に頼むことだけです。</dd>
+
+      <dt>鍵の「保持」と「使用」は別物</dt>
+      <dd>取り出せないことと、使えないことは別です。この区別がこの章の核心になります。</dd>
+
+      <dt>セキュリティレベル（SOFTWARE / TEE / StrongBox）</dt>
+      <dd>Android Keystore の鍵が<b>どこで守られているか</b>の段階です。
+        <code>SOFTWARE</code> は OS の中のソフトウェア実装、
+        <code>TRUSTED_ENVIRONMENT</code> は OS から隔離された実行環境（TEE）、
+        <code>STRONGBOX</code> は専用のチップです。
+        <b>Keystore を使えば必ず TEE に入る、ということはありません。</b>
+        いまどれなのかは <code>KeyInfo</code> の <code>getSecurityLevel()</code> で分かり、
+        アプリの「鍵がどこにあるか調べる」がその値を表示します。
+        エミュレータでは <code>SOFTWARE</code> と出るのが普通です。</dd>
+
+      <dt><code>getEncoded()</code> が <code>null</code> であること</dt>
+      <dd>「この API から鍵のバイト列を取り出せない」という意味です。
+        <b>ハードウェアで守られている証拠ではありません。</b>
+        保護のレベルは上の <code>getSecurityLevel()</code> で別に確かめます。
+        2つは別の観測であって、片方からもう片方は導けません。</dd>
+    </dl>
+    </details>
+  </div>
+
+  <!-- ===================== ② 判断の分かれ目 ===================== -->
+  <div class="fork">
+    <h2>ここに判断の分かれ目がある</h2>
+    <ul>
+      <li>鍵をコードに書くか、Keystore に生成させるか</li>
+      <li>鍵を使うときに画面ロック解除を要求するか（<code>setUserAuthenticationRequired</code>）</li>
+      <li><b>何から守るつもりなのか</b>、落とした端末を拾った人か、root を取った攻撃者か</li>
+    </ul>
+    <p class="fork-tail">3つ目が一番大事で、そして一番よく飛ばされます。
+      落とした端末を拾った人と root を取った攻撃者とでは<b>射程がまったく違う</b>ので、
+      同じ「暗号化しました」でも、どちらを想定したかで正解が変わります。章の終わりでここを判定します。</p>
+
+    <details class="hint askai">
+      <summary>いま答えが知りたい人へ（AI に聞くための文）</summary>
+      <p>ここで正解を先に書いてしまうと、このあとの手順が答え合わせではなく、
+      決まった結果をなぞる作業になります。だからこのページには書きません。
+      ただ、分からないまま進むのが気持ち悪いのは当然なので、<b>聞き方のほうを渡します。</b>
+      普段使っている AI に貼ってください。返ってきた説明は、この章の手順でそのまま検証できます。
+      <b>合っているかどうかを決めるのは、AI ではなくあなたの手元のエミュレータです。</b></p>
+<pre><code>Android のセキュリティを学んでいます。手を動かして確かめる前に、選択肢の見取り図がほしいです。
+
+【状況】
+アプリが端末の中のデータを暗号化して保存します。作り手が決めるのは次の3つです。
+1. 鍵をコードに書くか、Android Keystore に生成させるか
+2. 鍵を使うときに画面ロック解除を要求するか（setUserAuthenticationRequired）
+3. そもそも何から守るつもりなのか（落とした端末を拾った人か、root を取った攻撃者か）
+【聞きたいこと】
+それぞれについて、次の相手から守れるかどうかを分けて書いてください。
+- 同じ端末に入っている別のアプリ（権限なし）
+- adb shell（開発者オプションが有効な端末）
+- root を取った人、または端末を物理的に奪った人
+- 動いているアプリのプロセスに入れる人
+
+【条件】
+- 断定する箇所には、Android エミュレータの手元で確かめる方法
+  （打つコマンド、または見るべき出力）を必ず添えてください。
+- 「安全です」と書くときは、何から安全なのかを必ず書いてください。
+- 一般論で終わらせず、パス名・API 名・エラー名などの具体的な名前を出してください。</code></pre>
+      <button class="learn-btn" data-copy>この文をコピー</button>
+    </details>
+
+  </div>
+
+  <!-- ============================ BASIC ============================ -->
+  <section class="layer basic">
+    <h2><span class="layer-tag">Basic</span>アプリの中の鍵を取り出して、自分で復号する</h2>
+    <p class="layer-meta">所要 30分 / 初学者向け・必修。</p>
+
+    <h3>1. アプリで暗号化する</h3>
+    <p><code>第4章 → [Basic] 文字列を暗号化する</code> を開き、適当な文字列を暗号化します。
+    出てきた Base64 の暗号文を控えておいてください。</p>
+
+    <h3>2. APK から鍵を探す</h3>
+    <p>まず APK が端末のどこにあるかを見ます。</p>
+<pre><code>adb shell pm path com.example.insecureappplatform</code></pre>
+<pre class="out"><code>package:/data/app/~~xxxx==/com.example.insecureappplatform-yyyy==/base.apk</code></pre>
+    <p>この長いパスは端末ごとに違うので、打ち写さず、そのまま取り出します。</p>
+<pre><code>adb pull "$(adb shell pm path com.example.insecureappplatform | sed 's/package://' | tr -d '\r')" base.apk
+unzip -p base.apk 'classes*.dex' | strings | grep -iE "1234567890abcdef|AES/ECB"</code></pre>
+<pre class="out"><code>1234567890abcdef
+AES/ECB/PKCS5Padding</code></pre>
+
+    <h3>3. 手元で復号する</h3>
+<pre><code>echo -n '&lt;アプリが出した Base64&gt;' | base64 -d | \
+  openssl enc -d -aes-128-ecb -K 31323334353637383930616263646566</code></pre>
+
+    <div class="callout vuln">
+      <strong>確認できたこと</strong><br>
+      アプリが「暗号化」した文字列を、アプリを使わずに読めてしまいました。
+      鍵が <code>1234567890abcdef</code> という文字列のまま APK に入っている以上、
+      この暗号化は攻撃者に対して何の障壁にもなっていません。
+      <b>APK は攻撃者の手元にあるファイルにすぎません。</b>
+    </div>
+
+    <h3>4. おまけ：同じ文字列を2回暗号化してみる</h3>
+    <p>同じ平文を2回入れると、<code>AES/ECB/PKCS5Padding</code> なのでまったく同じ暗号文が出ます。
+    中身を復号できなくても「前と同じものを送った」ことは分かってしまいます。</p>
+
+    <p class="stance">いま立っていたのは <b>APK だけ持っている人</b> です（<a href="intro-sandbox.html#positions">攻撃者の立場</a>）。端末にも通信路にも触れていないのに、鍵が手に入りました。</p>
+
+    <p><b>Basic はここまで。</b></p>
+  </section>
+
+  <!-- ============================ STANDARD ============================ -->
+  <section class="layer standard">
+    <h2><span class="layer-tag">Standard</span>鍵をアプリの外に出す</h2>
+    <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
+
+    <div class="learn-step" data-step="ch4-s2"></div>
+    <div class="learn-step" data-step="ch4-s6"></div>
+
+    <h3>5. Keystore 版で暗号化する</h3>
+    <p><code>[Standard] 文字列を暗号化する (Keystore)</code> を開いて暗号化します。
+    <code>CryptoActivity</code> との違いは<b>鍵の置き場所だけ</b>であって、暗号アルゴリズムの話ではありません。</p>
+
+    <h3>6. APK を探しても鍵がない</h3>
+<pre><code>unzip -p base.apk 'classes*.dex' | strings | grep -i "tee_demo_key"</code></pre>
+    <p>出てくるのは<b>鍵の名前（alias）だけ</b>で、鍵そのものは入っていません。
+    鍵は生成された瞬間から Keystore の中にあり、アプリのコードにも変数にも現れません。</p>
+
+    <h3>7. 鍵がどこにあるか調べる</h3>
+    <p>アプリの <b>「鍵がどこにあるか調べる」</b> を押します。</p>
+<pre class="out"><code>alias = tee_demo_key (認証なしの鍵)
+KeyInfo.getSecurityLevel() = SOFTWARE (ソフトウェア実装)
+鍵の使用にユーザー認証が要るか: false
+鍵の世代: 3f1a9c02
+
+この値は端末の実測値であり、Android Keystore の鍵が常に
+TEE や StrongBox にあるとは限らない。エミュレータでは SOFTWARE になる。</code></pre>
+
+    <div class="callout note">
+      <strong>「Keystore を使った」は「TEE に入った」ではありません</strong><br>
+      エミュレータでは <code>SOFTWARE</code> と表示されることが多く、実機では
+      <code>TRUSTED_ENVIRONMENT</code>（TEE）や <code>STRONGBOX</code>（専用チップ）になります。
+      <b>Android Keystore を使ったからといって、鍵が必ずハードウェアで守られるわけではありません。</b><br><br>
+      どの段でも「このアプリからは鍵の中身を取り出せない」点は同じです。
+      違うのは、OS のカーネルごと破られたときに耐えられるかどうかです。
+      だから「Keystore を使っているので鍵は TEE で保護されています」という診断文は、
+      <b>この画面の実測値を添えない限り、根拠のない断定</b>になります。
+      自分の端末で何が出たかを控えておいてください。
+    </div>
+
+    <h3>8. root で鍵を探す</h3>
+<pre><code>adb root
+adb shell ls -l /data/misc/keystore/</code></pre>
+    <p>ファイルはありますが、これは鍵そのものではありません。
+    <code>TRUSTED_ENVIRONMENT</code> や <code>STRONGBOX</code> の端末では、鍵の素材は
+    Android 側から見えない領域にあり、鍵で「計算してもらう」ことしかできません。
+    <code>SOFTWARE</code> の端末では、鍵は OS の中のソフトウェアが守っています。
+    <b>どこまで耐えるかはその違いで変わります。</b>
+    この教材では、そこまでは確かめていません。</p>
+
+    <h3>9. 差分実験：鍵の置き場所 × 攻撃者の位置</h3>
+    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。
+    正直なところ、この表を自力で埋められるかどうかが、この章を分かったかどうかの境目だと思っています。</p>
+<table class="matrix">
+      <tr><th>攻撃者の位置</th><th>ハードコード鍵</th><th>Keystore の鍵</th></tr>
+      <tr><td>APK を手に入れた（静的解析）</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>端末のファイルを取れる（root）</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>アプリのプロセスに入れる（Frida）</td><td class="blank">?</td><td class="blank">?</td></tr>
+    </table>
+<details class="hint"><summary>答え合わせ</summary>
+<table class="matrix">
+      <tr><th>攻撃者の位置</th><th>ハードコード鍵</th><th>Keystore の鍵</th></tr>
+      <tr><td>APK を手に入れた（静的解析）</td><td class="ng">鍵が取れる</td><td class="ok">取れない</td></tr>
+      <tr><td>端末のファイルを取れる（root、ファイルを読むだけ）</td><td class="ng">鍵が取れる</td><td class="ok">取れない</td></tr>
+      <tr><td>アプリのプロセスに入れる（Frida）</td><td class="ng">鍵が取れる</td><td class="ng">鍵は取れないが<b>使える</b></td></tr>
+    </table>
+</details>
+
+    <p>右下のマスが第4章の本題です。<b>「取れない」と「使えない」は違います。</b></p>
+
+    <p class="learn-note">2行目と3行目は、どちらも root を取った相手でも起こりえます。
+    違うのは、ファイルを読んで終わったか、そこからプロセスに入ったかだけです。
+    <b>「root には取れません」とだけ書くと、3行目が消えます。</b></p>
+
+    <p><b>Standard はここまで。</b></p>
+  </section>
+
+  <!-- ============================ DEEP ============================ -->
+  <section class="layer deep">
+    <h2><span class="layer-tag">Deep</span>鍵の「保持」と「使用」を分けて考える</h2>
+    <p class="layer-meta">任意。Frida を使います。</p>
+
+    <div class="learn-step" data-step="ch4-s10"></div>
+    <div class="learn-step" data-step="ch4-s11"></div>
+
+    <h3>10. 鍵を取り出さずに使う</h3>
+<pre><code># Keystore 画面を前面に出したまま、リポジトリのルートで実行する
+frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
+<pre class="out"><code>[*] 鍵ハンドルを取得: android.security.keystore2.AndroidKeyStoreSecretKey
+[*] 鍵の中身 getEncoded() = null  ← null なら取り出せていない
+[*] 復号結果 = himitsu-no-memo
+[*] 鍵は取り出せていないのに、平文は手に入った。</code></pre>
+
+    <div class="callout vuln">
+      <strong>この章の山場</strong><br>
+      <code>getEncoded()</code> が <code>null</code> を返したことが、鍵を取り出せていない証拠です。
+      それでも <code>himitsu-no-memo</code> は手に入りました。
+      Android Keystore が守るのは<b>鍵の保持</b>であって<b>鍵の使用</b>ではないからで、
+      使用の可否を決めているのは「そのアプリとして動けるか」、つまりプロセスの話であり、
+      第1章の話に戻ってきます。
+    </div>
+
+    <h3>11. 使用にも条件を付ける</h3>
+
+    <div class="callout note">
+      <strong>先に：鍵は alias ごと分けてあります</strong><br>
+      <code>.setUserAuthenticationRequired(true)</code> にソースを書き換えて上書きインストールしても、
+      <b>すでにある鍵の使用条件は変わりません。</b>Keystore は alias で鍵を引くので、
+      同じ alias の鍵があればそれがそのまま返ってくるからです。
+      「1行変えたのに結果が変わらない」で止まるのはここです。<br><br>
+      そこでこの教材では、条件の違う2本を別々の alias として持っています。
+      <code>tee_demo_key</code>（認証なし）と <code>tee_demo_key_auth</code>（認証つき）です。
+      暗号文も鍵ごとに別々に保存します。
+      <b>鍵を作り直したら暗号文も作り直す</b>必要があるからです。
+    </div>
+
+    <p>アプリの Keystore 画面で <b>「認証つきの鍵 (tee_demo_key_auth)」</b> に切り替え、
+    その鍵で一度<b>暗号化</b>します。認証つきの鍵は暗号化にも認証が要るので、ここで一度認証を求められます。</p>
+
+    <p class="learn-note">エミュレータに画面ロック（PIN）か指紋が登録されていないと、
+    認証つきの鍵はそもそも作れません。
+    アプリが <code>canAuthenticate</code> の値を表示するので、その場合は設定から登録してください。</p>
+
+    <p>そのうえで <b>「認証せずに復号する」</b> を押します。</p>
+<pre class="out"><code>[未認証] UserNotAuthenticatedException
+鍵は存在するが、ユーザー認証がまだなので Keystore が使用を断った。
+判定しているのはアプリのコードではなく Keystore 側。</code></pre>
+    <p>次に <b>「認証してから復号する」</b> を押します。
+    こちらは <code>BiometricPrompt</code> に <code>CryptoObject</code> を渡す正規の経路で、
+    認証の通った <code>Cipher</code> だけが返ってきます。今度は復号できます。</p>
+    <p>同じことを Frida からもやります。手順10 のスクリプトは2本の鍵を順に試すので、
+    認証なしの鍵は通り、認証つきの鍵は断られます。</p>
+
+    <div class="callout blocked">
+      <strong>何が変わったのか</strong><br>
+      Frida は相変わらずプロセスの中にいます。それでも失敗するのは、
+      鍵を使ってよいかを判定しているのがアプリのコードではなく<b>Keystore の側</b>だからです。
+      アプリの中に書いた条件は飛ばせても、鍵の使用条件は飛ばせません。
+    </div>
+
+    <div class="callout note">
+      <strong>ただし「絶対に飛ばせない」ではありません</strong><br>
+      Keystore が強制しているのは<b>鍵を使えるかどうか</b>だけです。
+      利用者が自分で認証したあと、アプリが受け取る平文は、
+      <b>相変わらず攻撃者と同じプロセスの中にあります</b>。
+      認証を呼び出すアプリ側の処理も同じです。<br><br>
+      つまりこの対策が動かしたのは「できる／できない」ではなく、
+      <b>攻撃に必要な前提</b>のほうです。
+      「プロセスに入れば復号できる」が「プロセスに入り、かつ利用者に認証させれば取れる」に変わりました。
+      <a href="surface-map.html">攻撃面マップ</a>で ● が ◐ になる、というのがこれです。
+    </div>
+
+    <h3>11b. 失敗の種類を読み分ける</h3>
+    <p><b>「この鍵を削除して作り直す」</b>を押してから、暗号文はそのままで復号してみます。</p>
+<pre class="out"><code>[世代のずれ] 暗号文は鍵 3f1a9c02 で作られ、いまの鍵は b7e04d11。
+この失敗は認証とは関係ない。
+
+[復号失敗] AEADBadTagException
+認証とは関係ない。鍵と暗号文の世代が合っていない。</code></pre>
+
+    <div class="callout vuln">
+      <strong>これを「認証が効いた」と読まないこと</strong><br>
+      鍵を作り直すと、古い暗号文はもう復号できません。
+      これは<b>認証による拒否ではありません</b>。
+      実験中に鍵を作り直してしまうと、認証つきの鍵にしたから失敗したのか、
+      世代がずれたから失敗したのかが区別できなくなります。<br>
+      <b>失敗したときは、まず例外の種類を見てください。</b>
+      <code>UserNotAuthenticatedException</code> なら認証、
+      <code>AEADBadTagException</code> なら世代のずれ、
+      <code>KeyPermanentlyInvalidatedException</code> なら画面ロック設定の変更です。
+    </div>
+
+    <h3>12. その先</h3>
+    <ul>
+      <li><b>StrongBox</b>：TEE よりさらに独立した専用チップに鍵を置く</li>
+      <li><b>鍵の attestation</b>：「この鍵は本物のハードウェアで作られた」ことをサーバ側が検証する。
+        端末の自己申告ではなく、サーバが確かめる点が要点</li>
+      <li><b>Play Integrity</b>：端末とアプリの状態をサーバが確認する</li>
+    </ul>
+    <p>共通しているのは、<b>判定をクライアントの外に出している</b>という一点です。
+    クライアント側の判定は、クライアントを支配した相手には効かないので、
+    第3章のピン留めと同じ結論に戻ってきます。</p>
+  </section>
+
+  <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
+  <div class="verdict">
+    <h2>対策は効いたか。どこまで守るか</h2>
+    <p>この章の冒頭で挙げた3つ目の分かれ目、<b>何から守るつもりなのか</b>に戻ります。
+    同じ「暗号化しました」でも、想定する相手が違えば判定が変わります。</p>
+    <table class="matrix">
+      <tr><th>攻撃者の能力</th><th>ハードコード鍵</th><th>Keystore の鍵</th><th>Keystore + 認証要求</th></tr>
+      <tr><td>APK を手に入れた（静的解析）</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>アプリのデータファイルだけを持っている</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>ロック中の端末を物理的に取得した</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>端末上で root を持ち、ファイルを読んでいる</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>動作中のアプリのプロセスでコードを実行できる</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+    </table>
+    <p class="learn-note">3行目と4行目を分けてあるのは、
+    「端末を奪われた」が1つの前提ではないからです。
+    ロック中の端末を拾っただけの相手は、まだどの列にも立てていません。</p>
+    <details class="hint">
+      <summary>判定</summary>
+      <p>Keystore が守るのは <b>鍵そのものの流出</b>で、手順10 で <code>getEncoded()</code> が
+      <code>null</code> を返したとおり、取り出せないのは本当です。
+      それでも、動いているアプリに「その鍵で復号して」と頼ませることはできてしまいます。
+      <b>取り出せない ≠ 使えない。</b></p>
+      <p>だから <code>setUserAuthenticationRequired</code> が意味を持ちます。
+      鍵の<b>使用</b>に人間の操作を挟むと、プロセスを取っただけでは使えなくなるからで、
+      これは鍵をどこに置くかではなく、<b>いつ使えるかを縛る</b>という別の軸です。
+      ただし最後の行は <b>○ にはなりません</b>。
+      利用者が認証したあとの平文は、攻撃者と同じプロセスの中にあるからです。
+      増えたのは「利用者に認証させる」という前提であって、到達不能になったわけではありません。</p>
+      <p>3行目（ロック中の端末を物理取得）は、どの列でも届きません。
+      ただしそれは暗号の効果というより、<b>画面ロックが解けるまでユーザーデータが
+      ファイルベース暗号化で保護されている</b>という OS 側の仕組みによるものです。
+      「うちのアプリは端末を落としても安全です」と言うとき、
+      効いているのが自分の実装なのか OS なのかは区別してください。</p>
+      <p>まとめると、この章で確かめたのはこの一行です。
+      <b>クライアント側の暗号は、端末の持ち主が敵になった場合を完全には守れません。
+      守れる範囲を正しく言えることが、守れると言い張るより重要です。</b></p>
+    </details>
+  </div>
+
+  <h2>章末：手を動かした結果を言葉にする</h2>
+  <p>ここまでで観察は終わりましたが、観察しただけでは理解になりません。
+  鍵が抜けた・抜けなかったという結果だけを持ち帰ると、次に別の端末を渡されたときに何も言えません。
+  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書いてください。書けなければ、まだ分かっていません。</p>
+<p><a class="learn-btn" href="explain.html?ch=ch4">説明を書く</a></p>
+
+  <h3>理解を確認する</h3>
+  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
+<p><a class="learn-btn" href="quiz.html?ch=ch4">テストを受ける</a></p>
+
+  <h3>AI の出力を検証する</h3>
+  <p>AI が出した診断と修正案が並んでいて、正しいものと、もっともらしいけれど誤っているものが混ざっています。<b>実験で確かめて</b>判定してください。「見つける」課題ではありません。</p>
+<p><a class="learn-btn" href="oracle.html?ch=ch4">AI の出力を検証する</a></p>
+
+  <details class="hint">
+    <summary>説明を書き終えてから開く：到達点の目安</summary>
+    <ul>
+    <li>ハードコードされた鍵は、暗号アルゴリズムが何であっても意味をなしません</li>
+    <li>Android Keystore は鍵の取り出しを防ぎますが、鍵の使用は防ぎません</li>
+    <li><code>getEncoded()</code> が <code>null</code> であることと、ハードウェアで守られていることは別の話です</li>
+    <li>使用を制限したければ、条件をアプリの外（Keystore 側）に置く必要があります。
+      ただしそれで守れるのは鍵の使用だけで、認証後の平文はプロセスの中に残ります</li>
+    <li>クライアント側だけで完結する防御には限界があり、最終的にはサーバ側の検証が要ります</li>
+  </ul>
+  </details>
+
+  <div class="pager">
+    <a href="chapter3-network.html">← 第3章</a>
+    <a href="closing.html">終章 この先どこで調べるか →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

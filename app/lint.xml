@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  lint の扱いを1か所に書いておく。
+
+  方針: エラーは直す。警告は baseline で隠さない。
+  `./gradlew lint` はエラー0で通る状態を維持する。
+
+  以下の3つは «教材として意図的に埋めてある脆弱性» に対する警告であり、
+  抑制していない。lint の出力そのものを教材の一部として使うため
+  (「静的解析ツールは何を見つけ、何を見逃すか」は第2章・第4章の論点)。
+  抑制しない理由を、個別にここに残す。
+
+  1. GetInstance
+     CryptoActivity.kt: AES/ECB を «わざと» 使っている。
+     第1章 Deep の修正案 B と、第4章 Basic「同じ平文が同じ暗号文になる」観察に必要。
+     lint がこれを指摘できることは、学習者に見せたい事実そのもの。
+
+  2. ExportedContentProvider
+     AndroidManifest.xml: SessionProvider は permission なしの exported provider。
+     第2章 P3 の題材。同じ Manifest に、守った版 (ProtectedSessionProvider) も並べてある。
+
+  3. ExportedReceiver
+     AndroidManifest.xml: RoleReceiver は permission なしの exported receiver。
+     第2章 P7 の題材。守った版は ProtectedRoleReceiver。
+
+  UnusedResources として出る backup_rules / data_extraction_rules は、
+  AndroidManifest から参照するよう修正済みなので、もう出ない。
+  HardcodedText / Autofill / TextFields は教材の画面に対する一般的な指摘で、
+  内容の正しさには関わらないため、そのまま残している。
+-->
+<lint>
+    <!--
+      GradleDependency / AndroidGradlePluginVersion は「もっと新しい版がある」という
+      定期的な通知であり、ビルドの失敗にはしない。
+      依存の更新は、教材の実験結果が変わらないことを確認してから行う。
+    -->
+    <issue id="GradleDependency" severity="informational" />
+    <issue id="AndroidGradlePluginVersion" severity="informational" />
+</lint>

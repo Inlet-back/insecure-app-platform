@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オラクル演習 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>オラクル演習</h1>
+  <p class="subtitle">AI の診断と修正案を、実験で検証して判定する</p>
+
+  <div class="callout note">
+    <strong>これは「見つける」課題ではない</strong><br>
+    AI が出した診断と修正案が並んでいる。正しいものと、もっともらしいが誤っているものが混ざっている。
+    主張が正しいかどうかを<b>実際に試して</b>判定すること。
+    根拠は「そう習ったから」ではなく「こう試したらこうなったから」で書く。
+  </div>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="oracle.html?ch=ch1">第1章（5件）</a>
+    <a class="learn-btn" href="oracle.html?ch=ch4">第4章（2件）</a>
+  </div>
+
+  <div class="learn-panel" data-oracle data-chapter="ch1"></div>
+
+  <script>
+    var ch = new URLSearchParams(location.search).get("ch");
+    if (ch) document.querySelector("[data-oracle]").dataset.chapter = ch;
+  </script>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

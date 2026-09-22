@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>環境構築 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>環境構築</h1>
+  <p class="subtitle">上から順に貼っていけば終わります</p>
+
+  <div class="os-switch" data-os-switch></div>
+
+  <ul class="steps-index">
+    <li><a href="#s1">1 落として展開</a></li>
+    <li><a href="#s2">2 JDK と SDK</a></li>
+    <li><a href="#s3">3 AVD</a></li>
+    <li><a href="#s4">4 アプリを入れる</a></li>
+    <li><a href="#s5">5 モックサーバ</a></li>
+    <li><a href="#s6">6 ビルド</a></li>
+    <li><a href="#s7">7 Frida</a></li>
+    <li><a href="#trouble">よくある詰まり</a></li>
+  </ul>
+
+  <div class="callout blocked">
+    <strong>手順2 で 2GB ほど落とします</strong><br>
+    回線が遅いと、ここだけで15分を超えます。展開後に 12GB 以上の空きも要ります。
+  </div>
+
+  <h2 id="s1">1. 配布物を落として展開する</h2>
+
+  <p>ソース一式（<code>InsecureAppPlatform-src.zip</code>）と、2つの APK を落とします。
+  合わせて 12MB ほどです。</p>
+
+  <div data-os="mac">
+<pre><code>mkdir -p ~/ws &amp;&amp; cd ~/ws
+curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/InsecureAppPlatform-src.zip
+unzip -q InsecureAppPlatform-src.zip
+cd InsecureAppPlatform-*/
+curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/app-debug.apk
+curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/attacker-debug.apk
+pwd</code></pre>
+  </div>
+
+  <div data-os="win">
+<pre><code>mkdir $HOME\ws -Force; cd $HOME\ws
+Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/InsecureAppPlatform-src.zip -OutFile InsecureAppPlatform-src.zip
+Expand-Archive .\InsecureAppPlatform-src.zip -DestinationPath . -Force
+cd (Get-ChildItem -Directory InsecureAppPlatform-*)[0]
+Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/app-debug.apk -OutFile app-debug.apk
+Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/attacker-debug.apk -OutFile attacker-debug.apk
+pwd</code></pre>
+  </div>
+
+  <p>ブラウザから落とすなら
+  <a href="https://github.com/Inlet-back/insecure-app-platform/releases/latest">Releases のページ</a>に
+  同じ3つが並んでいます。</p>
+
+  <p class="done-line">最後に出たパスが<b>リポジトリのルート</b>です。この先のコマンドはすべてここで実行します。</p>
+
+  <h2 id="s2">2. JDK と Android SDK を入れる</h2>
+
+  <div data-os="mac">
+<pre><code>brew install --cask temurin@17
+brew install --cask android-commandlinetools</code></pre>
+
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+export ANDROID_HOME=$HOME/android-sdk
+export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator
+
+sdkmanager --sdk_root="$ANDROID_HOME" --licenses
+sdkmanager --sdk_root="$ANDROID_HOME" \
+  "platform-tools" "emulator" "system-images;android-33;google_apis;arm64-v8a"</code></pre>
+
+    <p>Intel の Mac なら、最後の <code>arm64-v8a</code> を <code>x86_64</code> に読み替えてください。</p>
+  </div>
+
+  <div data-os="win">
+<pre><code>winget install --id EclipseAdoptium.Temurin.17.JDK</code></pre>
+
+    <p>コマンドラインツールは <code>winget</code> に無いので、
+    <a href="https://developer.android.com/studio#command-tools">developer.android.com</a> から
+    <code>commandlinetools-win-&lt;番号&gt;_latest.zip</code> を落とします。
+    <b>展開先のフォルダ名を <code>latest</code> にする</b>ところが要点です。</p>
+
+<pre><code>$env:ANDROID_HOME = "$HOME\android-sdk"
+mkdir "$env:ANDROID_HOME\cmdline-tools" -Force
+Expand-Archive "$HOME\Downloads\commandlinetools-win-*_latest.zip" `
+  -DestinationPath "$env:ANDROID_HOME\cmdline-tools"
+Rename-Item "$env:ANDROID_HOME\cmdline-tools\cmdline-tools" "latest"
+
+$env:Path += ";$env:ANDROID_HOME\cmdline-tools\latest\bin"
+$env:Path += ";$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator"
+
+sdkmanager --sdk_root="$env:ANDROID_HOME" --licenses
+sdkmanager --sdk_root="$env:ANDROID_HOME" `
+  "platform-tools" "emulator" "system-images;android-33;google_apis;x86_64"</code></pre>
+  </div>
+
+  <div class="callout note">
+    <strong>ライセンスへの同意を聞かれます</strong><br>
+    <code>--licenses</code> が何回か聞いてきます。目を通して <code>y</code> を返してください。
+    飛ばすと、次のインストールが黙って止まります。
+  </div>
+
+  <h2 id="s3">3. AVD を作って起動する</h2>
+
+  <div data-os="mac">
+<pre><code>avdmanager create avd -n ws -d pixel_7 \
+  -k "system-images;android-33;google_apis;arm64-v8a"
+emulator -avd ws &amp;
+adb wait-for-device
+adb shell getprop ro.build.version.sdk</code></pre>
+  </div>
+
+  <div data-os="win">
+<pre><code>avdmanager create avd -n ws -d pixel_7 `
+  -k "system-images;android-33;google_apis;x86_64"
+Start-Process emulator -ArgumentList "-avd","ws"
+adb wait-for-device
+adb shell getprop ro.build.version.sdk</code></pre>
+  </div>
+
+  <div class="callout note">
+    <strong>途中で1回だけ聞かれます</strong><br>
+    <code>Do you wish to create a custom hardware profile? [no]</code> には、
+    そのまま Enter を押してください。
+  </div>
+
+  <div class="callout blocked">
+    <strong>Google Play 版のイメージを選ばない</strong><br>
+    Play ストア入りのイメージは <code>adb root</code> ができません。
+    第1章手順10 以降と第4章 Deep で必要になります。上のコマンドは <code>google_apis</code> 版を指定しています。
+  </div>
+
+  <p class="done-line"><code>33</code> と返れば、端末の準備は終わりです。初回の起動は数分かかります。</p>
+
+  <h2 id="s4">4. 2つのアプリを入れる</h2>
+  <p>被害者アプリと攻撃者アプリは<b>別々の APK</b>で、別々の UID を持ちます。
+  これが第1章・第2章の実験の前提になります。</p>
+
+<pre><code>adb install -r app-debug.apk
+adb install -r attacker-debug.apk</code></pre>
+
+  <div data-os="mac">
+<pre><code>adb shell pm list packages -U | grep -E "insecureappplatform|attacker"</code></pre>
+  </div>
+  <div data-os="win">
+<pre><code>adb shell pm list packages -U | Select-String "insecureappplatform|attacker"</code></pre>
+  </div>
+
+<pre class="out"><code>package:com.example.attacker uid:10247
+package:com.example.insecureappplatform uid:10246</code></pre>
+
+  <p class="done-line">UID が違っていれば準備完了です。<b>ここまでで第1章と第2章は最後まで通ります。</b></p>
+
+  <div class="callout note">
+    <strong>中身が壊れていないか確かめる</strong><br>
+    Releases のページに載せた sha256 と一致することを確かめてください。
+    <div data-os="mac">
+<pre><code>shasum -a 256 app-debug.apk attacker-debug.apk</code></pre>
+    </div>
+    <div data-os="win">
+<pre><code>Get-FileHash app-debug.apk,attacker-debug.apk -Algorithm SHA256</code></pre>
+    </div>
+  </div>
+
+  <div class="callout note">
+    <strong><code>keys/</code> は消さないこと</strong><br>
+    2つのアプリは別々の鍵で署名してあります。配布物の <code>keys/</code> に、
+    配った APK と同じ鍵が入っています。特別な操作は要りません。
+    <details class="hint">
+      <summary>消してしまったときの直し方</summary>
+      <p>次のビルドで別の鍵が自動生成され、配った APK と署名が食い違います。
+      その状態で入れ直すと <code>INSTALL_FAILED_UPDATE_INCOMPATIBLE</code> で落ちます。
+      両アプリを消してから入れ直してください。</p>
+<pre><code>adb uninstall com.example.insecureappplatform
+adb uninstall com.example.attacker</code></pre>
+      <p>鍵が別々であることは、第2章の signature permission の実験が前提にしています。
+      入っているのは教材専用の使い捨ての鍵で、本番には使いません。</p>
+    </details>
+  </div>
+
+  <h2 id="s5">5. モックサーバ（第3章で使う）</h2>
+<pre><code>python3 tools/mockserver/server.py</code></pre>
+  <p>起動時に表示される公開鍵ピンは第3章 Standard 手順6 で使います。
+  待ち受けは <code>127.0.0.1</code> のみで、エミュレータからは <code>10.0.2.2</code> として見えます。
+  第3章 手順7 では <code>--expired</code> を付けて起動し直します。</p>
+
+  <div class="callout blocked">
+    <strong>同梱の証明書と秘密鍵は使い捨ての教材用</strong><br>
+    <code>tools/mockserver/</code> の CA・サーバ証明書・サーバの秘密鍵は、
+    <b>秘密鍵ごとリポジトリに入っています</b>。誰でも中身を読める前提の材料なので、
+    この教材のループバック以外には絶対に使わないでください。
+    作り直すときは <code>tools/mockserver/make-teaching-certs.sh</code> を実行します。
+    作り直すと<b>アプリが同梱している CA も差し替わる</b>ので、
+    そのあとアプリの再ビルドと再インストール（<code>./gradlew :app:installDebug</code>）が要ります。
+    忘れると第3章 手順4 と同じ <code>Trust anchor not found</code> が出ます。
+    スクリプトが最後にこのことを表示します。
+  </div>
+
+  <h2 id="s6">6. ソースからビルドする（第3章で使う）</h2>
+  <p>第3章の差分実験では <code>network_security_config.xml</code> を書き換えて入れ直します。
+  そこで初めてビルドが要ります。第1章・第2章だけなら手順4 のままで構いません。</p>
+
+  <div data-os="mac">
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+./gradlew :app:installDebug</code></pre>
+  </div>
+  <div data-os="win">
+<pre><code>$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
+.\gradlew.bat :app:installDebug</code></pre>
+  </div>
+
+  <div class="callout blocked">
+    <strong>JDK が新しすぎると一行だけのエラーで落ちます</strong><br>
+<pre class="out"><code>* What went wrong:
+    25.0.3</code></pre>
+    Gradle 8.11 / AGP 8.9 が JDK 25 に未対応です。上のように JDK 17 を指定してください。
+  </div>
+
+  <div class="callout blocked">
+    <strong><code>ANDROID_HOME</code> が今のシェルから消えていると落ちます</strong><br>
+<pre class="out"><code>SDK location not found. Define a valid SDK location with an ANDROID_HOME
+environment variable or by setting the sdk.dir path in your project's
+local properties file at '.../local.properties'</code></pre>
+    手順2 の環境変数の行をもう一度実行するか、<code>local.properties</code> に書いてください。
+    <div data-os="mac">
+<pre><code>sdk.dir=/Users/&lt;あなた&gt;/android-sdk</code></pre>
+    </div>
+    <div data-os="win">
+<pre><code>sdk.dir=C\:\\Users\\&lt;あなた&gt;\\android-sdk</code></pre>
+    </div>
+  </div>
+
+  <h2 id="s7">7. Frida（Deep 層のみ・任意）</h2>
+  <p>Deep をやらないなら不要です。端末の ABI に合う <code>frida-server</code> を
+  <a href="https://github.com/frida/frida/releases">frida のリリースページ</a>から落とします。
+  <span data-os="mac">Apple Silicon の AVD なら <code>arm64</code> です。</span><span data-os="win">Windows の AVD なら <code>x86_64</code> です。</span></p>
+
+<pre><code>pip install frida-tools
+frida --version        # ← このバージョンと frida-server を必ず一致させる
+
+adb root
+adb push frida-server-&lt;version&gt;-android-&lt;abi&gt; /data/local/tmp/
+adb shell chmod 755 /data/local/tmp/frida-server-&lt;version&gt;-android-&lt;abi&gt;
+adb shell "nohup /data/local/tmp/frida-server-&lt;version&gt;-android-&lt;abi&gt; &gt;/dev/null 2&gt;&amp;1 &amp;"
+
+frida-ps -Ua | head     # アプリが一覧に出れば準備完了</code></pre>
+
+  <div class="callout note">
+    <strong>スクリプトの流し込み方</strong><br>
+    対象アプリを<b>前面に出した状態</b>で <code>frida -U -F -l &lt;script&gt;</code> を使います
+    （<code>-F</code> は最前面のアプリに接続する指定）。
+    <code>-f</code> でアプリを起動する形は、起動直後でまだクラスが読み込まれておらず
+    失敗することがあります。実行はリポジトリのルートから行ってください。
+  </div>
+
+  <h2 id="trouble">よくある詰まり</h2>
+
+  <h3>入れるところ（手順1〜2）</h3>
+  <table>
+    <tr><th>症状</th><th>原因と対処</th></tr>
+    <tr><td><code>sdkmanager: command not found</code></td>
+        <td><code>PATH</code> の行が効いていない。ターミナルを開き直したら入れ直す</td></tr>
+    <tr data-os="win"><td><code>sdkmanager</code> が Java のエラーを出す</td>
+        <td>展開したフォルダ名が <code>latest</code> になっていない。
+            <code>cmdline-tools\latest\bin\</code> の形にする</td></tr>
+    <tr><td>インストールが黙って止まる</td>
+        <td>ライセンスに同意していない。<code>sdkmanager --licenses</code> を実行する</td></tr>
+  </table>
+
+  <h3>端末まわり（手順3〜4）</h3>
+  <table>
+    <tr><th>症状</th><th>原因と対処</th></tr>
+    <tr><td>エミュレータが起動しない</td>
+        <td><span data-os="win">「Windows の機能」から <b>Windows ハイパーバイザー プラットフォーム</b>を有効にして再起動する</span><span data-os="mac">ディスクの空きを確かめる。初回は数分かかるので待つ</span></td></tr>
+    <tr><td><code>adb: no devices/emulators found</code></td>
+        <td>AVD が起動していない。<code>emulator -avd ws</code> のあと <code>adb wait-for-device</code></td></tr>
+    <tr><td><code>INSTALL_FAILED_OLDER_SDK</code></td>
+        <td>端末の API が minSdk 24 未満。手順3 で API 33 を指定し直す</td></tr>
+    <tr><td><code>INSTALL_FAILED_UPDATE_INCOMPATIBLE</code></td>
+        <td>入っている APK と署名が違う。両アプリを <code>adb uninstall</code> してから入れ直す</td></tr>
+    <tr><td><code>adbd cannot run as root</code></td>
+        <td>Google Play 版イメージ。<code>google_apis</code> 版で AVD を作り直す</td></tr>
+  </table>
+
+  <h3>ビルドと、章の中で（手順6 以降）</h3>
+  <table>
+    <tr><th>症状</th><th>原因と対処</th></tr>
+    <tr><td><code>What went wrong: 25.0.3</code></td>
+        <td>JDK が新しすぎる。JDK 17 を指定する</td></tr>
+    <tr><td><code>SDK location not found</code></td>
+        <td><code>ANDROID_HOME</code> が消えている。手順2 の行を実行し直す</td></tr>
+    <tr><td><code>run-as: package not debuggable</code></td>
+        <td>release ビルドを入れている。配られた APK か <code>installDebug</code> を使う</td></tr>
+    <tr><td>攻撃者アプリで <code>cursor が null</code></td>
+        <td>被害者アプリが未インストール、または <code>&lt;queries&gt;</code> がない</td></tr>
+    <tr><td>第2章の P4 が<b>成功してしまう</b></td>
+        <td>2つの APK が同じ鍵で署名されている。<code>tools/verify/verify-signatures.sh</code> で確認する</td></tr>
+    <tr><td>第4章で認証つきの鍵を作れない</td>
+        <td>AVD に画面ロックも指紋も登録されていない。設定から登録する</td></tr>
+    <tr><td>第4章の復号が <code>AEADBadTagException</code></td>
+        <td>鍵を作り直したのに古い暗号文を使っている。その鍵で暗号化し直す</td></tr>
+  </table>
+
+  <div class="callout note">
+    <strong>記録はどこに残るか</strong><br>
+    予測や説明の記録は、ブラウザの中（localStorage）だけに保存されます。外部には送信しません。
+    <a href="progress.html">記録</a>のページから JSON で書き出せます。
+    記録は<b>ページの URL ごとに別物</b>になります。
+  </div>
+
+  <div class="pager">
+    <a href="intro-sandbox.html">← 導入</a>
+    <a href="chapter1-process.html">第1章 プロセス境界 →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+build/
+.kotlin/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# 学習ログ（ローカルのみ）
+.learn/
+
+
+# 教材用の署名鍵（ビルド時に自動生成される。配布・コミットしない）
+/keys/
+
+# Python のキャッシュ
+__pycache__/
+*.pyc
+
+# 配布物
+/dist/
+
+# 教材用 CA の秘密鍵。make-teaching-certs.sh が実行時に作り直すので配布不要。
+# 公開リポジトリに載せない（アプリが同梱する CA に対する証明書を誰でも作れてしまう）。
+/tools/mockserver/ca-key.pem
+
+# Claude Code のローカル設定（絶対パスが入る。公開しない）
+/.claude/settings.local.json

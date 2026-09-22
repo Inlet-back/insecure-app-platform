@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>攻撃面マップ | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>攻撃面マップ</h1>
+  <p class="subtitle">章を終えたあとに戻ってくる、1枚の表を埋める演習</p>
+
+  <div class="badges">
+    <span class="badge">Basic 20分</span>
+    <span class="badge">Standard 40分</span>
+    <span class="badge">Deep 任意</span>
+  </div>
+
+  <div class="callout note">
+    <strong>このページのゴール</strong><br>
+    章は「どの境界が破れるか」で並んでいます。ここでは並べ方を変えて、
+    <b>1つの資産に何通りの経路があるのかを数えます</b>。
+    使う語彙は7枚の<b>立場</b>のカードです。うち3枚は <a href="intro-sandbox.html#positions">導入</a> にあり、
+    残りの4枚は<a href="#positions">このページの中ほど</a>に置いてあります。
+  </div>
+
+  <div class="callout note">
+    <strong>この表が何を数えているか</strong><br>
+    列は「攻撃者の肩書」ではなく<b>能力・アクセス経路</b>です。
+    数えるのは、その能力から<b>最終的に</b>その資産へ到達できるかどうかで、直接できることだけではありません。<br>
+    <b class="ng">●</b> 直接届く / <b class="ng">◐</b> 前提をもう一段足せば届く / <b class="ok">○</b> 届かない / — 対象外。<br>
+    <b>◐ を ○ と書かないでください。</b>root の列を ○ にしてしまうと、
+    root からプロセス内実行へ進める経路が表から消えます。
+    根拠の欄に <span class="sf-untested">未検証</span> と付いているマスは、
+    この教材で実際には確かめていないものです。
+    <b>届かないことと、確かめていないことは別ものです。</b>
+  </div>
+
+  <p>章は境界で切ってあります。<b>これは守る側の地図です。</b>
+  守る側は経路を1本ずつ塞ぐので、「ファイルの権限」「窓口」「通信」と分かれているほうが仕事に合っています。</p>
+
+  <p>攻める側の入り口は資産です。認証情報が1つあるとして、それが端末のどこに現れるかを数えると、
+  保存されたファイル、窓口の向こう側、通信の途中、鍵で包まれた状態と、いくつも出てきます。
+  <b>章ぶんの内容を、1つの資産の話として並べ直すと表になります。</b></p>
+
+  <div class="callout blocked">
+    <strong>どこから始めるか</strong><br>
+    表は3枚あり、<b>自分が通した層のものだけをやります</b>。
+    Basic だけを通した人は最初の1枚で終わりです。先の2枚は、まだ打っていない手順を含みます。
+    <b>思い出せないことと、確かめていないことは別ものです。</b>迷ったら章へ戻って打ち直してください。
+  </div>
+
+  <!-- ============================ BASIC ============================ -->
+  <section class="layer basic">
+    <h2><span class="layer-tag">Basic</span>4つの資産に、3つの立場から</h2>
+    <p class="layer-meta">4行・20分。各章の Basic で実際に打った結果だけで埋まります</p>
+
+    <p>ここに出てくる3つの立場は、すでに全部使っています。
+    第1章の <code>run-as</code> と第2章の <code>content query</code> が開発者の口、
+    第3章の Burp が通信路、第4章で APK を <code>grep</code> したのが「APK だけ」です。</p>
+
+    <p>1行ずつ、届く立場を全部選んでください。<b>選んで確定するまで答えは出ません。</b></p>
+
+    <div data-surface="basic"></div>
+
+    <p><b>初学者はここまでで終わりです。</b>
+    4つの資産が、それぞれ違う立場から狙われることが分かれば、この演習の目的は果たしています。</p>
+  </section>
+
+  <h2 id="positions">表に出てくる立場（残りの4枚）</h2>
+
+  <p>Basic の表で使った3枚は <a href="intro-sandbox.html#positions">導入</a> にあります。
+  ここから先の表では列が増え、次の4枚が加わります。カードは3行で固定してあり、
+  3行目の<b>そこに立つには何が要るか</b>で、その列がどのくらい現実的かが決まります。</p>
+
+  <div class="pos-grid">
+    <div class="pos-card inside">
+      <h3>同じ端末の普通のアプリ <span class="pos-side-tag">端末の中</span></h3>
+      <p class="pos-tool">attacker アプリ（P0〜P7b）</p>
+      <dl>
+        <dt>できること</dt>
+        <dd>公開されている窓口を叩けます。自分の UID で通る操作なら全部できます。</dd>
+        <dt>できないこと</dt>
+        <dd>他アプリのファイルを直接開けません。別 UID なので所有者が一致しません。</dd>
+        <dt>立つには</dt>
+        <dd>ユーザーにアプリを1つ入れてもらうだけです。特別な権限は要りません。</dd>
+      </dl>
+    </div>
+    <div class="pos-card outside">
+      <h3>アプリのデータファイルだけを手に入れた <span class="pos-side-tag">端末の外</span></h3>
+      <p class="pos-tool">バックアップの展開 / 吸い出したデータ / adb pull の結果</p>
+      <dl>
+        <dt>できること</dt>
+        <dd>その時点のファイルの中身を、時間をかけて調べられます。端末は手元になくて構いません。</dd>
+        <dt>できないこと</dt>
+        <dd>端末の上で何かを実行できません。Keystore に鍵を使わせることも、窓口を叩くこともできません。</dd>
+        <dt>立つには</dt>
+        <dd>バックアップを手に入れる、吸い出されたデータを受け取る。端末そのものには触れていません。</dd>
+      </dl>
+    </div>
+    <div class="pos-card inside">
+      <h3>動いている端末で root を持っている <span class="pos-side-tag">端末の中</span></h3>
+      <p class="pos-tool">adb root / ファイル直読み / デバッガ / Frida の設置</p>
+      <dl>
+        <dt>できること</dt>
+        <dd>UID の照合を無視してファイルを読めます。さらに、動いているプロセスを覗き、止め、
+          コードを注入できます。<b>この最後の1つが、1枚下のカードへの入口です。</b></dd>
+        <dt>できないこと</dt>
+        <dd>ファイルが読めることと、中身が読めることは別です。
+          Android Keystore が管理している鍵のバイト列は、それでも直接は取り出せません。
+          どこまで耐えるかは端末の保護レベル次第で、
+          アプリの「鍵がどこにあるか調べる」に出る実測値で決まります。</dd>
+        <dt>立つには</dt>
+        <dd>root 化済みの端末を使う、ブートローダを開ける、OS の脆弱性を使う。
+          <b>ロックの解けた端末が手元にあることが前提</b>です。</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="pos-grid">
+    <div class="pos-card inside">
+      <h3>動いているアプリの中 <span class="pos-side-tag">端末の中</span></h3>
+      <p class="pos-tool">Frida</p>
+      <dl>
+        <dt>できること</dt>
+        <dd>アプリ自身として振る舞えます。アプリにできることは全部できます。</dd>
+        <dt>できないこと</dt>
+        <dd>アプリにできないことはできません。権限はアプリのものを超えません。</dd>
+        <dt>立つには</dt>
+        <dd><b>この教材では</b> root を取ったエミュレータに frida-server を置きます。
+          root端末のカードから上がる段として扱っているのは、そのためです。</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="callout note">
+    <strong>教材の前提と、技術一般の制約は別です</strong><br>
+    この教材が root を要求しているのは、<b>手順を1本に固定するため</b>であって、
+    Frida 一般が root を必要とするからではありません。
+    非 root の端末でも、次のような経路でプロセス内にコードを持ち込めます。
+    <ul>
+      <li><b>Frida Gadget</b> を組み込んで APK を再パッケージし、自分の鍵で署名し直す</li>
+      <li><code>android:debuggable="true"</code> のアプリにデバッガとして接続する</li>
+    </ul>
+    どちらも「アプリを配布された形のまま動かす」前提を崩しますが、
+    root は取っていません。<b>root → Frida が唯一の経路ではありません。</b>
+    この先の表で root の列を評価するときは、
+    「root がなければプロセス内に入れない」とは読まないでください。
+  </div>
+
+  <h3>「端末を奪った」は、これ1枚では表せません</h3>
+
+  <p>物理的に端末を手に入れただけでは、アプリのデータには届きません。
+  間に立ちはだかるものが違うので、少なくとも次の4つは別の前提として扱います。</p>
+
+  <table class="matrix">
+    <tr><th>前提</th><th>そこから何ができるか</th><th>この表のどの列か</th></tr>
+    <tr>
+      <td>ロック中の端末を物理的に取得した</td>
+      <td>ほぼ何もできません。画面ロックが解けるまで、ユーザーデータは
+        ファイルベース暗号化で保護されたままです</td>
+      <td>どの列にも立てていません</td>
+    </tr>
+    <tr>
+      <td>ロックが解けた端末を操作できる</td>
+      <td>画面から見えるものは見えます。開発者オプションが有効なら
+        <code>adb shell</code> の列に上がれます</td>
+      <td>adb shell（条件付き）</td>
+    </tr>
+    <tr>
+      <td>root / OS を侵害した</td>
+      <td>ファイルを直接読め、プロセスにも入れます。
+        ただしブートローダのアンロックはデータ消去を伴う構成が多く、
+        <b>「端末を拾ったからここに立てる」わけではありません</b></td>
+      <td>root端末（→ プロセス内）</td>
+    </tr>
+    <tr>
+      <td>バックアップやファイルのコピーだけを持っている</td>
+      <td>ファイルの中身は調べられますが、端末の上では何も実行できません</td>
+      <td>取得済みファイル</td>
+    </tr>
+  </table>
+
+  <p class="who">第1章の暗号化が効くのはいちばん下の行に対してで、
+  上から3行目に対しては効きません。<b>「端末を奪われても安全です」という一文は、
+  この4つのどれを指しているのかを言わないと判定できません。</b></p>
+
+  <h3>強い順に一直線には並びません</h3>
+
+  <p>導入の3枚とここまでの3枚は、上から下へ強くなっていくように読めます。端末の中に限ればそのとおりで、
+  普通のアプリより <code>adb shell</code> が広く、その上に root があります。ここは段になっています。</p>
+
+  <p>一方で、通信路にいる人は端末の中のファイルに一切届きませんし、
+  root を取った人も、経路を流れる暗号文をそのまま読めるわけではありません。
+  <b>強さが一直線なら、表は階段状になるはずです。</b>そうならないことを、この先の3枚で確かめます。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 250" role="img" aria-label="端末の外の2つの立場と、端末の中で段になっている4つの立場を並べた図">
+      <rect class="plate" x="8" y="8" width="704" height="234" rx="10"/>
+
+      <text class="t-sm" x="28" y="36">端末の外</text>
+      <rect class="card" x="28" y="46" width="180" height="46" rx="6"/>
+      <text class="t-b" x="42" y="68">APK だけ持っている</text>
+      <text class="t-sm" x="42" y="84">コードは全部。値は1つもない</text>
+
+      <rect class="card" x="28" y="104" width="180" height="46" rx="6"/>
+      <text class="t-b" x="42" y="126">通信路にいる人</text>
+      <text class="t-sm" x="42" y="142">出ていくものだけ</text>
+
+      <rect class="card" x="28" y="162" width="180" height="46" rx="6"/>
+      <text class="t-b" x="42" y="184">取得済みファイル</text>
+      <text class="t-sm" x="42" y="200">端末の上では何もできない</text>
+
+      <line class="flow dash" x1="238" y1="30" x2="238" y2="226"/>
+      <text class="t-sm" x="246" y="36">端末の中</text>
+
+      <rect class="card" x="268" y="46" width="200" height="40" rx="6"/>
+      <text class="t-b" x="282" y="71">同じ端末の普通のアプリ</text>
+
+      <rect class="card" x="268" y="98" width="200" height="40" rx="6"/>
+      <text class="t-b" x="282" y="123">開発者の口（adb shell）</text>
+
+      <rect class="card" x="268" y="150" width="200" height="40" rx="6"/>
+      <text class="t-b" x="282" y="175">端末を奪った / root</text>
+
+      <rect class="card" x="498" y="150" width="190" height="40" rx="6"/>
+      <text class="t-b" x="512" y="175">動いているアプリの中</text>
+      <path class="block" d="M470 170 h20"/>
+      <text class="t-sm" x="498" y="212">本教材では root の先。一般には</text>
+      <text class="t-sm" x="498" y="228">Gadget や再署名でも到達しうる</text>
+
+      <text class="t-sm" x="268" y="226">上の2つは、下の段へ自動では上がれません</text>
+    </svg>
+    <figcaption>立場は7つ。端末の中の3つは段になっていて、外の3つは別の軸に立っています。</figcaption>
+  </figure>
+
+  <!-- ============================ STANDARD ============================ -->
+  <section class="layer standard">
+    <h2><span class="layer-tag">Standard</span>列が3本増える</h2>
+    <p class="layer-meta">7行・40分。攻撃者アプリ（P1〜P7b）と root を使った人向け</p>
+
+    <p>立場に<b>取得済みファイル</b>・<b>別アプリ</b>・<b>root端末</b> が加わり、
+    資産に「暗号化したあとの中身」「permission で守った窓口の先」「HTTPS で送信中」が加わります。</p>
+
+    <p><b>「取得済みファイル」と「root端末」を分けているのが要点です。</b>
+    バックアップを1つ手に入れただけの相手と、動いている端末で root を持っている相手は、
+    できることが違います。第1章の暗号化は前者には効きますが、後者には効きません。
+    1つの列にまとめてしまうと、この差が言えなくなります。</p>
+
+    <p><b>さっきと同じ行がもう一度出てきます。</b>
+    列が増えた状態で、もう一度考えてください。答えは前の表とは別に記録されるので、
+    前に何を選んだかは気にしなくて構いません。</p>
+
+    <div data-surface="standard"></div>
+
+    <p><b>Standard はここまで。</b>
+    ここまでで、防御が効いている範囲を列の数で言えるようになっています。</p>
+  </section>
+
+  <!-- ============================ DEEP ============================ -->
+  <section class="layer deep">
+    <h2><span class="layer-tag">Deep</span>最後の1列</h2>
+    <p class="layer-meta">10行・任意。Frida でプロセスの中に入った人向け</p>
+
+    <p>最後に<b>プロセス内</b>の列が増え、資産に Keystore の鍵、鍵の<b>使用</b>、
+    そして<b>認証つきの鍵の使用</b>が加わります。</p>
+
+    <p>注目してほしいのは、新しく増えた2行より、<b>前の表にもあった行のほうです</b>。
+    列が1本増えただけで結論がひっくり返る行があります。どれがそうなるかを、選ぶ前に考えてみてください。</p>
+
+    <div data-surface="deep"></div>
+  </section>
+
+  <h2>表が埋まったら</h2>
+
+  <p>持ち帰ってほしいのは3つです。</p>
+
+  <p>1つ目。<b>防御とは、この表のマスが ● から ◐ や ○ へ動くことです。</b>
+  第1章で暗号化を入れたとき、消えたのは「取得済みファイル」と <code>adb shell</code> の列でした。
+  root の列は消えず、● から ◐ に変わっただけです。そこからプロセス内実行へ進めるからです。
+  第3章で HTTPS にしたとき、消えたのは経路上の1列だけで、端末の中の列は1つも減っていません。
+  「対策しました」と言うかわりに「このマスがこう動きました」と言えると、その主張は相手が検証できる形になります。</p>
+
+  <p>ついでに、<b>列が完全に消える対策のほうが珍しい</b>ことにも気づいてほしいところです。
+  多くの対策は、攻撃に必要な前提を1つ増やすだけです。
+  第4章の「認証つきの鍵」がその典型で、プロセス内の ● は消えず、◐ になります。</p>
+
+  <p>2つ目。消えずに残った列が、そのまま報告書に書く残存リスクです。
+  報告書の価値は、見つけた脆弱性の数ではなく、<b>どこまで見て、どこから先は見ていないのかが読み手に分かること</b>にあります。
+  この表は、埋めたマスと埋めていないマスが同じ形で残るので、そのまま範囲の申告になります。
+  第3章の <code>adb shell</code> や root の行に <span class="sf-untested">未検証</span> が付いているのは、そのためです。
+  <b>そのマスは「届かない」ではなく「まだ何も言えない」です。</b></p>
+
+  <p>3つ目。次に別のアプリを見るときは、章ではなくこの表を先に書いてください。
+  資産を縦に並べ、立場を横に並べ、埋まらないマスを潰していく。
+  その順番で進めるかぎり、教材に出てこなかった構成でも同じやり方が使えます。</p>
+
+  <div class="pager">
+    <a href="chapter4-tee.html">← 第4章</a>
+    <a href="closing.html">終章 →</a>
+    <a href="progress.html">記録を見る</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

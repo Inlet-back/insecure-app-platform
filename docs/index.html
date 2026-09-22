@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InsecureAppPlatform | Android セキュリティ学習プラットフォーム</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>Android セキュリティ学習プラットフォーム</h1>
+  <p class="subtitle">脆弱性を見つける演習ではなく、脆弱性が成立する条件と防御が効く範囲を実験で確かめる演習</p>
+
+  <p>Android の主役は、アプリのバグではなく <b>OS が各アプリを箱に閉じ込めていること</b> です。
+  この教材は、その箱がどこから破れるかで4章に分けてあり、どの章にも<b>攻撃側</b>と<b>防御側</b>の両方を置いています。
+  「どうやって漏れるか」で終わらせず、「<b>なぜ普段は漏れないのか</b>」まで見に行きます。</p>
+
+  <p>手を動かす前に読むページは1枚だけです。
+  そこで<b>何を確かめに行くのか</b>と<b>どの立場で確かめるのか</b>を決めてから、エミュレータに移ります。</p>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="intro-sandbox.html">導入を読む（15分・座学のみ）</a>
+    <a class="learn-btn" href="setup.html">環境構築</a>
+    <a class="learn-btn" href="quickcheck.html">5分クイックチェック</a>
+  </div>
+
+  <h2>3つの層</h2>
+  <p>各章は3層に分かれています。<b>Basic だけを通しても、この教材は一周できます。</b></p>
+
+  <table>
+    <tr><th>層</th><th>時間</th><th>やること</th></tr>
+    <tr><td><b>Basic</b></td><td>30分</td><td>手順どおりに打って結果を見る。攻撃が1回成功して終わり</td></tr>
+    <tr><td><b>Standard</b></td><td>1〜2時間</td><td>条件を1つずつ変えて比べ、守られている理由を OS 側で確認する</td></tr>
+    <tr><td><b>Deep</b></td><td>任意</td><td>防御の限界を見る。Frida を使う</td></tr>
+  </table>
+
+  <div class="callout note">
+    <strong>進み方の目安</strong><br>
+    はじめて → 全章の Basic だけ。「4種類の漏れ方を体験した」で完結します。<br>
+    もう少し深く → 全章の Standard まで。「OS がどう守っているか説明できる」に到達します。<br>
+    とことん → 気になった章の Deep へ。<b>やらなくても学習は完結します。</b>
+  </div>
+
+  <h2>通しでやる順番</h2>
+  <ol>
+    <li>何もやる前に <a href="quiz.html?ch=all">概念テスト（全章）</a> を事前として受ける。ほとんど解けなくて構いません</li>
+    <li><a href="intro-sandbox.html">導入</a> を読み、<a href="setup.html">環境構築</a> を済ませる</li>
+    <li>各章を Basic → Standard と進める。Standard では手順ごとに、打つ前に予測を書く</li>
+    <li>章末の <a href="explain.html">説明課題</a>。書けなければ、その章の Standard に戻る</li>
+    <li>全章を終えたら <a href="surface-map.html">攻撃面マップ</a> と <a href="oracle.html">オラクル演習</a></li>
+    <li>概念テストを<b>事後</b>として受け直し、<a href="progress.html">記録</a>で全体を振り返る</li>
+  </ol>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="quiz.html">概念テスト</a>
+    <a class="learn-btn" href="explain.html">説明課題</a>
+    <a class="learn-btn" href="oracle.html">オラクル演習</a>
+    <a class="learn-btn" href="progress.html">自分の記録</a>
+  </div>
+
+  <h2>章</h2>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="chapter1-process.html">
+      <h3>第1章 — プロセス境界</h3>
+      <p>平文で保存された認証情報を取り出し、次に「なぜ他アプリからは読めないのか」を
+      UID と SELinux で確認する。暗号化がどこまで守るのかまで見る。</p>
+    </a>
+    <a class="chapter-card" href="chapter2-ipc.html">
+      <h3>第2章 — IPC境界</h3>
+      <p>ファイルの権限は変えていないのに、ContentProvider と Intent から
+      同じデータが出ていく。exported と permission を1段ずつ変えて比べる。</p>
+    </a>
+    <a class="chapter-card" href="chapter3-network.html">
+      <h3>第3章 — ネットワーク境界</h3>
+      <p>端末の外に出た認証情報を捕まえる。HTTPS が読めるかどうかは
+      暗号の強さではなく信頼ストアの中身で決まることを実験で示す。</p>
+    </a>
+    <a class="chapter-card" href="chapter4-tee.html">
+      <h3>第4章 — 実行環境境界</h3>
+      <p>APK から鍵を取り出して復号する。次に Keystore に鍵を移し、
+      「取り出せない」と「使えない」が別物であることを確かめる。</p>
+    </a>
+    <a class="chapter-card" href="surface-map.html">
+      <h3>横断 — 攻撃面マップ</h3>
+      <p>章を終えてから戻る表。資産に、どの立場から届くかを数える。
+      Basic / Standard / Deep の3枚に分かれていて、層が上がると列が増える。</p>
+    </a>
+    <a class="chapter-card" href="closing.html">
+      <h3>終章 — この先どこで調べるか</h3>
+      <p>4章を4行に畳み、共通していた1つの問いを取り出す。
+      MASVS / MASTG と公式ドキュメントの使い分け、教材の外での次の一歩まで。</p>
+    </a>
+  </div>
+
+  <h2>使うもの</h2>
+  <table>
+    <tr><th>項目</th><th>値</th></tr>
+    <tr><td>被害者アプリ</td><td><code>com.example.insecureappplatform</code></td></tr>
+    <tr><td>攻撃者アプリ</td><td><code>com.example.attacker</code>（別 APK・別 UID）</td></tr>
+    <tr><td>minSdk / targetSdk</td><td>24 / 35</td></tr>
+    <tr><td>Basic で使う道具</td><td><code>adb</code> のみ</td></tr>
+    <tr><td>Standard で使う道具</td><td><code>adb</code>、攻撃者アプリ、モックサーバ、Burp（任意）</td></tr>
+    <tr><td>Deep で使う道具</td><td>root 化 AVD、Frida</td></tr>
+    <tr><td>学習の記録</td><td>ブラウザ内に保存（外部送信なし・JSON で書き出し可）</td></tr>
+    <tr><td>実施範囲</td><td>ローカルの AVD と、自分がインストールしたアプリのみ</td></tr>
+  </table>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

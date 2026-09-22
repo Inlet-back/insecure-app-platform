@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 (API 30) 以下の Auto Backup の対象を決める。
+  AndroidManifest の android:fullBackupContent から参照している。
+  API 31 以降は data_extraction_rules.xml のほうが使われる。
+
+  EncryptedSharedPreferences のファイルは «必ず» 除外する。
+  中身を復号する鍵は Android Keystore にあり、端末を移ると復元できない。
+  バックアップだけが戻ってくると、アプリは復号できないファイルを抱えて壊れる。
+  AndroidX の公式ドキュメントも、これらのファイルをバックアップから除くよう求めている。
+
+  tee_demo.xml も同じ理由で除外する (第4章の暗号文は Keystore の鍵に紐付いている)。
+  user_session.xml は第1章の «平文で保存している» 教材データなので、
+  ここでは除外していない。バックアップに平文の認証情報が載るという
+  それ自体が第1章の観察対象になる。
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="user_session_secure.xml" />
+    <exclude domain="sharedpref" path="fix_d.xml" />
+    <exclude domain="sharedpref" path="tee_demo.xml" />
+    <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_file_pref__.xml" />
+</full-backup-content>

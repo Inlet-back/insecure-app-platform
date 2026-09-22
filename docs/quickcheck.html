@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5分クイックチェック | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>5分クイックチェック</h1>
+  <p class="subtitle">4つの境界を1コマンドずつ破って、全体像だけ先に掴む</p>
+
+  <div class="callout note">
+    <strong>これは Basic 層の最短経路</strong><br>
+    ここでやるのは「漏れることの確認」だけ。<b>なぜ普段は漏れないのか</b>は各章の
+    Standard 層で扱う。時間がないときの入口として使うこと。
+  </div>
+
+  <p>前提：<a href="setup.html">環境構築</a>が済んでいて、
+  アプリの第1章画面で Username / Password を1回保存してあること。</p>
+
+  <h2>1. プロセス境界 — 保存されたものを覗く</h2>
+<pre><code>adb shell run-as com.example.insecureappplatform \
+  cat shared_prefs/user_session.xml</code></pre>
+  <p>パスワードが平文で出れば確認完了。→ <a href="chapter1-process.html">第1章へ</a></p>
+
+  <h2>2. IPC境界 — 窓口から同じものを取る</h2>
+<pre><code>adb shell content query --uri content://com.example.insecureappplatform.session/creds</code></pre>
+  <p>同じ認証情報が、ファイル権限を一切越えずに取れる。→ <a href="chapter2-ipc.html">第2章へ</a></p>
+
+  <p>ついでに、ログインを飛ばして管理画面を開く。</p>
+<pre><code>adb shell am start -n com.example.insecureappplatform/.AdminActivity</code></pre>
+
+  <h2>3. ネットワーク境界 — 経路に流れるものを見る</h2>
+<pre><code># ホスト側で待ち受ける
+nc -l 8080</code></pre>
+  <p>この状態でアプリの第3章画面の <b>「1. HTTP で送る」</b> を押す。
+  <code>POST /login</code> と <code>username=...&amp;password=...</code> がそのまま出れば確認完了。
+  → <a href="chapter3-network.html">第3章へ</a></p>
+
+  <h2>4. 実行環境境界 — 鍵を拾う</h2>
+<pre><code>adb shell pm path com.example.insecureappplatform
+adb pull /data/app/.../base.apk
+unzip -p base.apk 'classes*.dex' | strings | grep -iE "1234567890abcdef|AES/ECB"</code></pre>
+  <p>鍵と暗号モードがそのまま出れば確認完了。→ <a href="chapter4-tee.html">第4章へ</a></p>
+
+  <h2>まとめ</h2>
+  <table>
+    <tr><th>境界</th><th>コマンド数</th><th>目安</th></tr>
+    <tr><td>1. プロセス</td><td>1</td><td>&lt; 1分</td></tr>
+    <tr><td>2. IPC</td><td>2</td><td>約1分</td></tr>
+    <tr><td>3. ネットワーク</td><td>1 (+ アプリ操作)</td><td>約1分</td></tr>
+    <tr><td>4. 実行環境</td><td>3</td><td>約2分</td></tr>
+  </table>
+
+  <div class="callout note">
+    <strong>ここで止まらないこと</strong><br>
+    4つとも「漏れた」で終わっている。この教材の本体は、
+    <b>なぜ普段は漏れないのか</b>と<b>防御はどこまで効くのか</b>を確かめる Standard 層にある。
+  </div>
+
+  <div class="pager">
+    <a href="index.html">← Home</a>
+    <a href="chapter1-process.html">第1章 プロセス境界 →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

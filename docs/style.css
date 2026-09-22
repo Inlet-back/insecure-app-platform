@@ -1,0 +1,1015 @@
+:root {
+  /* 本文の読みやすい幅と、広い画面で左に出すナビの幅 */
+  --measure: 880px;
+  --sidebar-w: 248px;
+
+  --bg: #ffffff;
+  --bg-alt: #f5f6f8;
+  --text: #1c1f24;
+  --text-muted: #5a6472;
+  --border: #e2e5ea;
+  --accent: #2f6fed;
+  --danger: #c4392b;
+  --danger-bg: #fbeceb;
+  --success: #1f8a4c;
+  --success-bg: #e9f7ef;
+  --code-bg: #f0f2f5;
+  --nav-bg: #14181f;
+  --nav-text: #d7dbe2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c;
+    --bg-alt: #1b1f26;
+    --text: #e7e9ee;
+    --text-muted: #9aa3b1;
+    --border: #2a2f38;
+    --accent: #6f9dff;
+    --danger: #ff6b5e;
+    --danger-bg: #3a1e1c;
+    --success: #4ad080;
+    --success-bg: #10301f;
+    --code-bg: #1f242c;
+    --nav-bg: #0c0e12;
+    --nav-text: #c9cfda;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+}
+
+/* ===== レイアウト（土台はモバイル。広い画面は下の @media で上書きする） ===== */
+nav.topnav {
+  background: var(--nav-bg);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.45rem 0.7rem;
+  /* 画面が狭いとき、10個のリンクで縦を埋めない。横にスクロールさせる */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+nav.topnav::-webkit-scrollbar { display: none; }
+
+nav.topnav a {
+  color: var(--nav-text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+}
+
+nav.topnav a.brand {
+  color: #fff;
+  font-weight: 700;
+  margin-right: 0.3rem;
+}
+
+nav.topnav a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+  text-decoration: none;
+}
+
+/* 今いるページ。learn.js が aria-current を付ける */
+nav.topnav a[aria-current="page"] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+main {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 1.6rem 1.1rem 3.5rem;
+}
+
+h1 {
+  font-size: 1.7rem;
+  margin-bottom: 0.3rem;
+}
+
+h2 {
+  font-size: 1.32rem;
+  margin-top: 2.8rem;
+  margin-bottom: 0.7rem;
+}
+
+h3 {
+  font-size: 1.02rem;
+  margin-top: 1.6rem;
+}
+
+p, li { color: var(--text); }
+
+.subtitle {
+  color: var(--text-muted);
+  margin-top: 0;
+}
+
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0 1.6rem;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.badge.masvs {
+  background: rgba(47, 111, 237, 0.12);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+code {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  background: var(--code-bg);
+  padding: 0.12rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+.callout {
+  background: var(--bg-alt);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin: 1.4rem 0;
+}
+
+/* 先頭の <strong> は見出しラベルとして扱う。HTML 側は今までどおりでよい */
+.callout > strong:first-child {
+  display: block;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.2rem;
+  color: var(--text-muted);
+}
+
+/* ラベル直後の <br> は、ラベルが行になった時点で不要 */
+.callout > strong:first-child + br { display: none; }
+
+.callout.vuln { background: var(--danger-bg); }
+.callout.vuln > strong:first-child { color: var(--danger); }
+.callout.vuln > strong:first-child::before { content: "⚠ "; }
+
+.callout.fix { background: var(--success-bg); }
+.callout.fix > strong:first-child { color: var(--success); }
+.callout.fix > strong:first-child::before { content: "✔ "; }
+
+.chapter-grid {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1.4rem;
+}
+
+.chapter-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--bg-alt);
+  transition: border-color 0.15s ease;
+}
+
+.chapter-card:hover {
+  border-color: var(--accent);
+}
+
+.chapter-card .ch-title {
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+.chapter-card .ch-desc {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-top: 0.3rem;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.pager a { color: var(--accent); text-decoration: none; }
+.pager a:hover { text-decoration: underline; }
+
+footer {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 2rem 1rem 3rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 1rem 0;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th { color: var(--text-muted); font-weight: 600; }
+
+/* ===== 各章の Basic 末尾に置く「いまあなたが立っていた立場」 ===== */
+.stance {
+  border-left: 3px solid var(--text-muted);
+  background: var(--bg-alt);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 14px;
+  font-size: 0.92rem;
+}
+
+/* ===== 学習層 (Basic / Standard / Deep) ===== */
+.layer {
+  margin: 3rem 0 0;
+}
+
+.layer > h2 { margin-top: 1.2rem; }
+
+.layer-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: #fff;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.layer.basic    .layer-tag { background: var(--success); }
+.layer.standard .layer-tag { background: var(--accent); }
+.layer.deep     .layer-tag { background: #8a5cd0; }
+
+.layer-meta { color: var(--text-muted); font-size: 14px; margin-top: 0; }
+
+/* ===== 予測ボックス ===== */
+.predict {
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+.predict strong { color: var(--accent); }
+.predict ul { margin: 8px 0 0; }
+
+/* ===== OS が止めた、を示す callout ===== */
+.callout.blocked { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.callout.blocked > strong:first-child { color: var(--accent); }
+.callout.blocked > strong:first-child::before { content: "■ "; }
+
+/* ===== 段階ヒント ===== */
+details.hint { margin: 14px 0; }
+details.hint > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--accent);
+}
+details.hint[open] {
+  background: var(--bg-alt);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+details.hint[open] > summary { margin-bottom: 8px; }
+
+/* ===== ①の用語集。読み物ではなく、あとで引くためのもの ===== */
+details.hint.terms { margin-top: 1.2rem; }
+details.hint.terms > summary { color: var(--text-muted); font-weight: 600; }
+details.hint.terms[open] { background: transparent; padding: 0; }
+details.hint.terms[open] > summary { margin-bottom: 0; }
+
+/* ===== ②に置く「いま AI に聞く」動線 ===== */
+details.hint.askai > summary { color: var(--text-muted); }
+details.hint.askai pre { font-size: 0.78rem; max-height: 22rem; overflow: auto; }
+details.hint.askai .learn-btn { margin-top: 2px; }
+
+/* ===== 差分実験の表 ===== */
+table.matrix td:first-child { white-space: nowrap; }
+.ok   { color: var(--success); font-weight: 700; }
+.ng   { color: var(--danger);  font-weight: 700; }
+
+/* ===== 答えを先に見せないための表示 ===== */
+.fill-in {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+td.blank {
+  text-align: center;
+  color: var(--accent);
+  font-weight: 700;
+  background: repeating-linear-gradient(
+    45deg, transparent, transparent 6px,
+    color-mix(in srgb, var(--accent) 8%, transparent) 6px,
+    color-mix(in srgb, var(--accent) 8%, transparent) 12px);
+}
+
+/* ===== 学習ループの図 ===== */
+.loop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+.loop > div {
+  flex: 1 1 150px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: var(--bg-alt);
+}
+.loop h4 { margin: 0 0 6px; font-size: 15px; }
+.loop p  { margin: 0; font-size: 13px; color: var(--text-muted); }
+
+/* ===== 学習ループ (learn.js) ===== */
+.learn-step, .learn-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 22px 0;
+  background: var(--bg-alt);
+}
+.learn-step.result.matched {
+  background: var(--success-bg);
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+}
+.learn-step.result.missed {
+  background: var(--danger-bg);
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+}
+
+.learn-head {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.learn-tag {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  margin-right: 8px;
+}
+.learn-step.result.matched .learn-tag { background: var(--success); }
+.learn-step.result.missed  .learn-tag { background: var(--danger); }
+
+.learn-setup, .learn-note { color: var(--text-muted); font-size: 14px; }
+.learn-q { font-weight: 600; margin: 10px 0; }
+.learn-mine { font-size: 14px; }
+.learn-lead { font-weight: 600; margin: 12px 0 6px; }
+
+.learn-choice { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.learn-choice label {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 12px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.learn-choice label:hover { border-color: var(--accent); }
+
+.learn-reason { display: block; margin: 12px 0; font-size: 14px; color: var(--text-muted); }
+.learn-reason input, .learn-qa textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+}
+.learn-qa { margin: 18px 0; }
+.learn-rubric { display: block; margin: 8px 0; font-size: 14px; }
+
+.learn-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.learn-btn {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 5px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.learn-btn:hover { filter: brightness(1.1); }
+.learn-link {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.learn-table { width: 100%; margin: 10px 0; }
+.learn-table th { width: 9em; text-align: left; white-space: nowrap; }
+
+.learn-why {
+  background: var(--success-bg);
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.learn-misc {
+  padding: 0;
+  margin: 14px 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.learn-claim {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  background: var(--bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+td.st-hit     { color: var(--success); font-weight: 700; }
+td.st-miss    { color: var(--danger);  font-weight: 700; }
+td.st-pending { color: var(--accent); }
+td.st-todo    { color: var(--text-muted); }
+
+/* ===== ① 座学：この章で触る仕組み ===== */
+.primer {
+  margin: 2.2rem 0;
+}
+.primer > h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.2rem;
+  border: none;
+  padding: 0;
+}
+.primer .primer-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.9rem;
+}
+.primer dl { margin: 0; }
+.primer dt {
+  font-weight: 600;
+  margin-top: 0.8rem;
+}
+.primer dt:first-child { margin-top: 0; }
+.primer dd {
+  margin: 0.15rem 0 0 0;
+  color: var(--text);
+}
+.primer .who,
+main > .who {
+  margin: 1.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* ===== ② 判断の分かれ目 ===== */
+.fork {
+  margin: 2.2rem 0;
+}
+.fork > h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.6rem;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+}
+.fork ul { margin: 0.4rem 0 0; padding-left: 1.3rem; }
+.fork li { margin: 0.35rem 0; }
+.fork .fork-tail {
+  margin: 0.9rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* ===== ⑤⑥ 章末：対策の判定と射程 ===== */
+.verdict {
+  margin: 2.4rem 0;
+}
+.verdict > h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.6rem;
+  border: none;
+  padding: 0;
+  color: var(--success);
+}
+.verdict table { margin-top: 0.6rem; }
+
+/* ===== ページを前半と後半に割る区切り ===== */
+.part-break {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 3.4rem 0 0;
+}
+.part-label {
+  margin: 0.6rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+/* ===== 図（インライン SVG） ===== */
+.fig {
+  margin: 1.5rem 0;
+}
+.fig svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.fig figcaption {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+  line-height: 1.5;
+}
+/* SVG 内の要素。色はすべてテーマ変数から取るのでダークモードでも読める */
+.fig .plate { fill: var(--bg-alt); stroke: none; }
+.fig .card  { fill: none; stroke: var(--border); stroke-width: 1.2; }
+.fig .wall  { stroke: var(--accent); stroke-width: 2.5; fill: none; }
+.fig .wall-fill { fill: var(--accent); opacity: 0.06; }
+.fig .flow  { stroke: var(--text-muted); stroke-width: 1.8; fill: none; }
+.fig .pass  { stroke: var(--success); stroke-width: 2.2; fill: none; }
+.fig .block { stroke: var(--danger); stroke-width: 2.2; fill: none; }
+.fig .t     { fill: var(--text); font-size: 13px; font-family: inherit; }
+.fig .t-sm  { fill: var(--text-muted); font-size: 11.5px; font-family: inherit; }
+.fig .t-b   { fill: var(--text); font-size: 13px; font-weight: 700; font-family: inherit; }
+.fig .t-ok  { fill: var(--success); font-size: 12px; font-weight: 700; font-family: inherit; }
+.fig .t-ng  { fill: var(--danger); font-size: 12px; font-weight: 700; font-family: inherit; }
+.fig .mono  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; }
+.fig .dash  { stroke-dasharray: 5 4; }
+
+/* ---- 問い部品 (data-inquiry)。自分で説明を書いてから AI へ、の順序を形で示す ---- */
+.learn-inquiry {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-alt);
+  padding: 16px 18px;
+  margin: 22px 0;
+}
+.learn-inquiry.opened { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.learn-inquiry .learn-tag { background: var(--text-muted); }
+.learn-inquiry.opened .learn-tag { background: var(--accent); }
+.learn-inquiry > .learn-q { font-size: 1.02rem; line-height: 1.7; }
+
+.inq-stage { margin: 22px 0 0; }
+
+.inq-lead { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 0 0 8px; }
+.inq-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5rem; height: 1.5rem; flex: none;
+  border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 0.78rem; font-weight: 700;
+}
+.inq-label { display: block; font-size: 14px; color: var(--text-muted); margin: 10px 0 4px; }
+.learn-inquiry textarea,
+.learn-inquiry input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.learn-inquiry textarea { resize: vertical; }
+.learn-inquiry textarea:focus,
+.learn-inquiry input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.inq-verdict { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 0; }
+.inq-verdict label {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  background: var(--bg);
+  font-size: 14px;
+  cursor: pointer;
+}
+.inq-verdict label:hover { border-color: var(--accent); }
+.inq-saved { margin-top: 16px; }
+/* 問いから手順に飛んだとき、どこに着いたかを一瞬だけ示す */
+.inq-target { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---- 導入の問答。問いと答えを1つの塊として見せる ---- */
+.qa {
+  background: var(--bg-alt);
+  border-radius: 8px;
+  padding: 14px 18px 2px;
+  margin: 20px 0;
+}
+.qa-q {
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+.qa .who { margin-left: 0; margin-right: 0; }
+
+/* ---- 章の問答。答えを先に大きく出して、補足を一段落とす ---- */
+.qa-a {
+  font-size: 1.04rem;
+  font-weight: 600;
+  line-height: 1.8;
+  margin: 0 0 14px;
+  padding-left: 13px;
+  border-left: 3px solid var(--accent);
+}
+.qa:has(.qa-a) .qa-q {
+  font-size: 1.1rem;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.qa:has(.qa-a) p:not(.qa-q):not(.qa-a) {
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: color-mix(in srgb, var(--text) 82%, var(--bg));
+}
+.qa:has(.qa-a) .who {
+  font-size: 0.88rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+
+
+/* =======================================================================
+   攻撃者の立場（カード）と攻撃面マップ
+   ======================================================================= */
+
+/* ---- 立場カード。端末の外/中で色を分ける ---- */
+.pos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+.pos-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--bg-alt);
+}
+.pos-card h3 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+.pos-card .pos-tool {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+.pos-card dl { margin: 0; font-size: 0.88rem; }
+.pos-card dt {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .03em;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.pos-card dd { margin: 0; }
+.pos-side-tag {
+  float: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 8px;
+}
+.pos-card.outside { border-left: 3px solid var(--text-muted); }
+.pos-card.inside  { border-left: 3px solid var(--danger); }
+.pos-side {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 18px 0 0;
+}
+
+/* ---- 攻撃面マップの演習 ---- */
+.sf-row {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 16px 0;
+  background: var(--bg-alt);
+}
+.sf-row.result.matched { border-color: color-mix(in srgb, var(--success) 45%, transparent); }
+.sf-row.result.missed  { border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.sf-row.result.matched .learn-tag { background: var(--success); }
+.sf-row.result.missed  .learn-tag { background: var(--danger); }
+.sf-where { margin-top: -4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.sf-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.sf-choice label {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 14px;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.sf-choice label:hover { border-color: var(--accent); }
+.sf-choice label.off { opacity: .45; cursor: default; }
+.sf-na { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+/* 「確かめていない」を「届かない」と同じ見た目にしないための札 */
+.sf-untested {
+  font-size: 11px; color: var(--text-muted); margin-left: 6px;
+  border: 1px solid var(--border); border-radius: 3px; padding: 0 4px;
+}
+.sf-scope { border-left: 3px solid var(--border); padding-left: 10px; }
+
+.sf-cells td.sf-why { font-size: 0.85rem; color: var(--text-muted); white-space: normal; }
+.sf-cells tr.sf-diff { background: color-mix(in srgb, var(--danger) 8%, transparent); }
+.sf-cells tr.sf-diff td:first-child::after {
+  content: " !";
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.sf-map { margin-top: 2.5rem; }
+.sf-map-table th { white-space: nowrap; }
+.sf-map-table td { text-align: center; }
+.sf-map-table td:first-child { text-align: left; white-space: normal; }
+.sf-map-table td.sf-off { color: var(--text-muted); }
+.sf-map-table tr.sf-total td {
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.sf-bang { color: var(--danger); font-weight: 700; }
+
+/* =======================================================================
+   レスポンシブ。基準は「広い画面ではナビを左に出して、本文を中央に置く」。
+   幅が狭いときはナビが上の横スクロール帯に戻る。
+   ======================================================================= */
+
+/* アンカーで飛んだとき、上の固定ナビに隠れないようにする */
+html { scroll-padding-top: 4.5rem; }
+
+/* ---- 小さい画面：文字と余白を詰める ---- */
+@media (max-width: 700px) {
+  h1 { font-size: 1.45rem; }
+  h2 { font-size: 1.15rem; margin-top: 2rem; }
+
+  pre { font-size: 0.8rem; padding: 0.8rem 0.85rem; }
+  /* 幅を食う nowrap を解除し、それでも溢れる表は横スクロールで逃がす */
+  table { font-size: 0.83rem; display: block; overflow-x: auto; }
+  th, td { padding: 0.45rem 0.4rem; }
+  table.matrix td:first-child,
+  .learn-table th { white-space: normal; }
+
+  /* 長い URL やパスで横スクロールが出ないように折る */
+  code { overflow-wrap: anywhere; }
+
+  .learn-step, .learn-panel, .learn-inquiry { padding: 12px 13px; }
+  .sf-row { padding: 12px 13px; }
+  .pos-grid { grid-template-columns: 1fr; }
+  .learn-table th { width: auto; }
+  .learn-actions .learn-btn { flex: 1 1 auto; text-align: center; }
+
+  .callout, details.hint[open], .learn-why, .qa { padding: 0.7rem 0.85rem; }
+
+  /* 図は縮めると文字が読めなくなる。幅を保ったまま横に流す */
+  .fig { overflow-x: auto; }
+  .fig svg { width: 620px; max-width: none; }
+}
+
+/* ---- 中くらいの画面（タブレット〜小さいノート）---- */
+@media (min-width: 701px) {
+  main { padding: 2.2rem 1.8rem 4rem; }
+}
+
+@media (min-width: 768px) {
+  nav.topnav {
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 0.25rem 0.5rem;
+    padding: 0.7rem 1.4rem;
+  }
+}
+
+/* ---- 2カラムにできる幅から：ナビを左の柱にして、画面全体を使う ---- */
+@media (min-width: 1100px) {
+  html { scroll-padding-top: 1.5rem; }
+
+  body { padding-left: var(--sidebar-w); }
+
+  nav.topnav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 1.5rem 0.8rem 2rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  nav.topnav a {
+    font-size: 0.9rem;
+    padding: 0.42rem 0.7rem;
+    white-space: normal;
+  }
+
+  nav.topnav a.brand {
+    font-size: 1rem;
+    margin: 0 0 1.1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  nav.topnav a[aria-current="page"] {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  main { padding: 2.8rem 2.4rem 5rem; }
+}
+
+/* ---- 24インチ級。本文だけ少し広げる（広げすぎると1行が長くて読みにくい）---- */
+@media (min-width: 1600px) {
+  :root { --measure: 960px; --sidebar-w: 272px; }
+}
+
+/* ---- 横に余裕がある画面では、章カードを2列にする ---- */
+@media (min-width: 880px) {
+  .chapter-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+}
+
+/* 図は本文幅いっぱいまで。拡大しすぎると中の文字だけ大きくなって浮く */
+.fig svg { max-width: 760px; margin: 0 auto; }
+
+/* ===== コードブロックのコピーボタン（ui.js が差し込む） ===== */
+/* ボタンの受け皿。pre の «外側» なので、横スクロールしてもボタンは動かない */
+.code-wrap { position: relative; margin: 0.8rem 0; }
+.code-wrap > pre { margin: 0; }
+
+/* 出力例のラベルは pre 自身に付く（こちらは ui.js を通らない） */
+pre.out { position: relative; }
+
+.copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-family: inherit;
+  line-height: 1.5;
+  cursor: pointer;
+  /* 普段は控えめ。読むときに邪魔しない */
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+/* 触れる意思があるときだけ出す。タッチ端末は hover が無いので常に出す */
+.code-wrap:hover .copy-btn,
+.code-wrap:focus-within .copy-btn,
+.copy-btn:focus-visible { opacity: 1; }
+@media (hover: none) { .copy-btn { opacity: 1; } }
+
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-btn.is-done { border-color: var(--success); color: var(--success); opacity: 1; }
+.copy-btn.is-failed { border-color: var(--danger); color: var(--danger); opacity: 1; }
+
+/* ===== 出力例。打つものと、返ってくるものを見分けられるようにする ===== */
+pre.out {
+  background: var(--bg-alt);
+  border-color: transparent;
+  border-left: 3px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  color: var(--text-muted);
+  padding-top: 1.5rem;
+}
+pre.out::before {
+  content: "返ってくるもの";
+  position: absolute;
+  top: 5px;
+  left: 1rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+/* ===== macOS / Windows の切り替えタブ（ui.js が描く） ===== */
+.os-switch {
+  display: flex;
+  gap: 4px;
+  margin: 1.2rem 0;
+  padding: 4px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  width: fit-content;
+}
+.os-tab {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 6px 18px;
+  font-size: 0.86rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.os-tab:hover { color: var(--text); }
+.os-tab.is-on { background: var(--accent); color: #fff; }
+
+/* JS が動いたときだけ隠す。動かなければ両方の OS の手順が見えたまま残る */
+html.os-ready [data-os]:not(.is-on) { display: none; }
+
+/* ===== 手順の索引（環境構築ページの冒頭） ===== */
+.steps-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin: 1.2rem 0 1.6rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.86rem;
+}
+.steps-index a { color: var(--text-muted); text-decoration: none; }
+.steps-index a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ===== 手順の締め。ここまでで何ができたか ===== */
+.done-line {
+  border-left: 3px solid var(--success);
+  background: var(--success-bg);
+  border-radius: 0 6px 6px 0;
+  padding: 0.5rem 0.9rem;
+  margin: 1.1rem 0 1.8rem;
+  font-size: 0.9rem;
+}

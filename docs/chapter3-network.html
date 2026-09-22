@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第3章 ネットワーク境界 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>第3章 — ネットワーク境界</h1>
+  <p class="subtitle">箱の外に出た瞬間、OS はもう守ってくれない</p>
+
+  <div class="badges">
+    <span class="badge masvs">MASVS-NETWORK-1</span>
+    <span class="badge">Basic 30分</span>
+    <span class="badge">Standard 1〜2時間</span>
+    <span class="badge">Deep 任意</span>
+  </div>
+
+  <div class="callout note">
+    <strong>準備</strong><br>
+    ホスト側でモックサーバを起動しておきます。待ち受けるのは localhost だけで、外部には一切接続しません。
+<pre><code>python3 tools/mockserver/server.py</code></pre>
+    起動時に表示される「公開鍵ピン」は Standard 手順6 で使うので控えておいてください。<br><br>
+    証明書は <code>tools/mockserver/</code> に入っている<b>教材専用の使い捨て</b>です。
+    秘密鍵ごとリポジトリに入っているので、この教材のループバック以外には絶対に使わないでください。
+    作り直すときは <code>tools/mockserver/make-teaching-certs.sh</code> を実行します。
+  </div>
+
+  <!-- ===================== ① 座学 ===================== -->
+  <div class="primer">
+    <h2>この章で触る仕組み</h2>
+    <p class="primer-meta">読むだけ・7分。端末の外には、OS の隔離は届きません。</p>
+    <p>アプリがサーバと通信するのは、ごく普通のことです。通信を TLS で包み、
+    相手の証明書を端末が持つ信頼の一覧と突き合わせ、その方針をアプリが設定ファイルで宣言する、
+    というのが普段の守り方です。
+    この章で見るのは、その普通の通信で<b>何がどこに置かれ、誰が判断しているのか</b>のほうです。</p>
+    <figure class="fig">
+      <svg viewBox="0 0 720 280" role="img" aria-label="端末とサーバの間に第三者がいる経路と、検証を OS とアプリのどちらが決めているかを示した図">
+        <rect class="wall" x="16" y="40" width="150" height="70" rx="6"/>
+        <text class="t-b" x="30" y="70">端末（アプリ）</text>
+        <text class="t-sm" x="30" y="92">ここまでは OS が守る</text>
+
+        <rect class="plate" x="210" y="40" width="180" height="70" rx="6"/>
+        <text class="t-b" x="224" y="70">経路上の第三者</text>
+        <text class="t-sm" x="224" y="92">Wi-Fi / ルータ / Burp</text>
+
+        <rect class="wall" x="434" y="40" width="150" height="70" rx="6"/>
+        <text class="t-b" x="448" y="70">サーバ</text>
+        <text class="t-sm mono" x="448" y="92">10.0.2.2</text>
+
+        <line class="flow" x1="166" y1="76" x2="204" y2="76"/>
+        <polygon points="208,76 198,71 198,81" fill="var(--text-muted)"/>
+        <line class="flow" x1="390" y1="76" x2="428" y2="76"/>
+        <polygon points="432,76 422,71 422,81" fill="var(--text-muted)"/>
+
+        <text class="t-ng" x="210" y="134">この箱に OS の隔離は届きません</text>
+
+        <rect class="card" x="16" y="160" width="330" height="86" rx="6"/>
+        <text class="t-b" x="30" y="188">OS がやること</text>
+        <text class="t-sm" x="30" y="210">証明書の連なりをたどり、</text>
+        <text class="t-sm" x="30" y="230">起点の CA を信じているか確かめる</text>
+
+        <rect class="card" x="374" y="160" width="330" height="86" rx="6"/>
+        <text class="t-b" x="388" y="188">アプリが決めること</text>
+        <text class="t-sm" x="388" y="210">どのストアを信じると宣言するか、</text>
+        <text class="t-sm" x="388" y="230">自分でも照合するか</text>
+
+        <text class="t-sm" x="16" y="272">暗号の強さは、この図のどこにも出てきません。</text>
+      </svg>
+      <figcaption>
+        端末の外に出た時点で、OS の隔離は効きません。
+        検証を実行するのは OS ですが、何を信じるかを決めているのはアプリ側の書き方です。
+      </figcaption>
+    </figure>
+
+    <div class="qa">
+      <p class="qa-q">Q1. HTTPS は何を守っていますか。2つあります。</p>
+
+      <p class="qa-a"><b>盗み見されないこと</b>（暗号）と、<b>相手が誰か</b>（証明書の検証）です。</p>
+
+      <p>後者が崩れると、前者も意味を失います。
+      偽物と正しく暗号化して話したところで、守られたことにはならないからです。
+      この章で何度も戻ってくるのは、2つ目のほうです。</p>
+    </div>
+
+    <div class="qa">
+      <p class="qa-q">Q2.「相手が誰か」は、何を根拠に判断していますか。</p>
+
+      <p class="qa-a">証明書をたどった先の <b>trust anchor</b> を、端末が信じているかどうかです。</p>
+
+      <p>サーバの証明書は認証局（CA）が署名しています。
+      サーバ証明書 ← 中間 CA ← ルート CA という<b>証明書チェーン</b>をたどり、
+      行き着いた起点の CA が trust anchor です。</p>
+
+      <p>端末が信じている CA の一覧が<b>トラストストア</b>で、2種類あります。
+      <b>システム証明書</b>は OS に同梱されているもので、ここに足すには root が要ります。
+      <b>ユーザー証明書</b>は利用者が設定画面から後で足せるもので、
+      Android 7 以降、アプリは<b>既定ではこちらを信じません</b>。</p>
+    </div>
+
+    <div class="qa">
+      <p class="qa-q">Q3. その「信じる／信じない」を決めているのは誰ですか。</p>
+
+      <p class="qa-a"><b>アプリ</b>のほうです。検証を実行するのは OS ですが、何を信じるかはアプリが宣言します。</p>
+
+      <p>宣言の置き場所が <b>Network Security Config</b>（実体は
+      <code>app/src/main/res/xml/network_security_config.xml</code>）で、
+      宛先ごとに平文を許すか、どの trust anchor を使うかを、コードではなく宣言で書きます。</p>
+
+      <p>もう1つ、通常の検証に<b>上乗せ</b>して、相手の公開鍵のハッシュまで照合する
+      <b>公開鍵ピン留め</b>があります。この教材では実体をアプリのコード
+      （<code>NetworkActivity.pinningSocketFactory()</code>）に置いていますが、
+      Android が勧めているのは NSC の <code>&lt;pin-set&gt;</code> で宣言するほうです。<br>
+      <b>置き換えではなく上乗せ</b>というのが要点で、
+      通常の検証（チェーン・有効期限・発行者）を飛ばしてピンだけを見る実装にすると、
+      期限切れの証明書でも「ピンさえ合えば通る」ようになります。手順7 でそれを確かめます。</p>
+
+      <p class="who">第1章と第2章では、判定していたのは全部 OS でした。
+      この章から<b>アプリの書き方が結果を変えます</b>。
+      差分実験でコードを1行も変えずに結果がひっくり返るのは、そのためです。</p>
+    </div>
+    <p>「HTTPS だから安全」の中身は、次の4段です。
+    このうちどこが緩んでいるかで、経路上の第三者に中身が渡るかどうかが決まります。
+    ③と④を決めているのがアプリ側だ、というのがこの章の出発点です。</p>
+
+    <table class="matrix">
+      <tr><th>段</th><th>決めているのは</th><th>実体</th></tr>
+      <tr><td>① サーバが証明書を出す</td><td>サーバ</td><td>サーバ証明書 ← 中間 CA ← ルート CA</td></tr>
+      <tr><td>② その CA を端末が信じているか</td><td>OS</td>
+          <td>システム証明書ストア（追加には root が要る）／ユーザー証明書ストア</td></tr>
+      <tr><td>③ どちらのストアを使うか</td><td><b>アプリ</b></td>
+          <td><code>res/xml/network_security_config.xml</code></td></tr>
+      <tr><td>④ ③に加えて公開鍵まで照合するか</td><td><b>アプリ</b></td>
+          <td>NSC の <code>&lt;pin-set&gt;</code>（推奨）／
+              <code>NetworkActivity.expectedPin</code>（教材の手書き実装）</td></tr>
+    </table>
+
+    <p class="learn-note">Android 7 以降、アプリは既定ではユーザー証明書ストアを信じません。
+    Burp の CA を端末に入れても HTTPS が読めないのは、この既定が効いているからです。</p>
+    <p class="who"><b>守っているのは誰か：</b><b>OS の検証処理と、アプリ自身の宣言の両方</b>です。
+      証明書を検証するのは OS ですが、何を信頼するかを決めるのは NSC とアプリのコードです。
+      第1〜2章と違い、ここはアプリ側の書き方が結果を大きく変えます。</p>
+
+    <details class="hint terms">
+      <summary>用語だけをもう一度並べる（問答で出たものの一覧。あとで引く用）</summary>
+    <dl>
+      <dt>HTTPS が守っているもの</dt>
+      <dd>2つあります。<b>盗み見されないこと</b>（暗号）と、<b>相手が誰か</b>（証明書の検証）です。
+        後者が崩れると前者も意味を失います。</dd>
+
+      <dt>証明書チェーンと trust anchor</dt>
+      <dd>サーバの証明書は認証局（CA）が署名しています。
+        <b>その CA を端末が信じているかどうか</b>で、検証の可否が決まります。
+        この起点になる CA を trust anchor と呼びます。</dd>
+
+      <dt>トラストストア（システム証明書とユーザー証明書）</dt>
+      <dd>端末が信じている CA の一覧で、2種類あります。<b>システム証明書</b>は OS に同梱されているもので、
+        ここに足すには root が要ります。<b>ユーザー証明書</b>は利用者が端末の設定画面から
+        後で足せるもので、Android 7 以降、アプリは<b>既定ではこちらを信じません</b>。</dd>
+
+      <dt>Network Security Config (NSC)</dt>
+      <dd>実体は <code>app/src/main/res/xml/network_security_config.xml</code> で、
+        AndroidManifest.xml の <code>android:networkSecurityConfig</code> から結び付けています。
+        宛先ごとに平文を許すか（<code>cleartextTrafficPermitted</code>）、どの trust anchor を使うかを、
+        コードではなく宣言で決める仕組みです。</dd>
+
+      <dt>公開鍵ピン留め</dt>
+      <dd>通常の証明書検証を通したうえで、さらに相手の公開鍵のハッシュまで一致を要求するやり方です。
+        <b>通常の検証の置き換えではありません。</b>
+        置き場所は NSC の <code>&lt;pin-set&gt;</code>（宣言。Android の推奨）か、
+        アプリのコード（この教材の <code>NetworkActivity</code>）です。
+        鍵を更新するとピンも変わるので、予備のピンを併記し、
+        <code>expiration</code> を切って「アプリを更新できないまま全員が接続不能になる」事故を避けます。
+        <b>Android の公式ドキュメントは、一般のアプリにピンニングを推奨していません。</b>
+        運用の失敗で自分のアプリだけが落ちるリスクのほうが大きいことが多いからです。</dd>
+    </dl>
+    </details>
+  </div>
+
+  <!-- ===================== ② 判断の分かれ目 ===================== -->
+  <div class="fork">
+    <h2>ここに判断の分かれ目がある</h2>
+    <ul>
+      <li>平文（HTTP）で送るか、TLS で包むか</li>
+      <li>ユーザー証明書を信じるか（デバッグのために許した設定が、そのまま出荷されることがあります）</li>
+      <li>公開鍵をピン留めするか（守れる相手は増えますが、鍵の更新や期限切れでアプリが接続できなくなる運用リスクを引き受けます）</li>
+    </ul>
+    <p class="fork-tail">この章の差分実験は、<b>アプリのコードを一切変えずに</b>
+      CA をどこに置くかと NSC の 1行だけを動かします。結果が変わるなら、
+      それは「暗号の強さ」の話ではなかったわけです。</p>
+
+    <details class="hint askai">
+      <summary>いま答えが知りたい人へ（AI に聞くための文）</summary>
+      <p>ここで正解を先に書いてしまうと、このあとの手順が答え合わせではなく、
+      決まった結果をなぞる作業になります。だからこのページには書きません。
+      ただ、分からないまま進むのが気持ち悪いのは当然なので、<b>聞き方のほうを渡します。</b>
+      普段使っている AI に貼ってください。返ってきた説明は、この章の手順でそのまま検証できます。
+      <b>合っているかどうかを決めるのは、AI ではなくあなたの手元のエミュレータです。</b></p>
+<pre><code>Android のセキュリティを学んでいます。手を動かして確かめる前に、選択肢の見取り図がほしいです。
+
+【状況】
+アプリが認証情報をサーバに送ります。作り手が決めるのは次の3つです。
+1. 平文（HTTP）で送るか、TLS で包むか
+2. Network Security Config で、利用者が入れたユーザー証明書を信じるかどうか
+3. 公開鍵をピン留めするかどうか
+【聞きたいこと】
+それぞれについて、次の相手から守れるかどうかを分けて書いてください。
+- 同じ端末に入っている別のアプリ（権限なし）
+- adb shell（開発者オプションが有効な端末）
+- root を取った人、または端末を物理的に奪った人
+- 動いているアプリのプロセスに入れる人
+
+【条件】
+- 断定する箇所には、Android エミュレータの手元で確かめる方法
+  （打つコマンド、または見るべき出力）を必ず添えてください。
+- 「安全です」と書くときは、何から安全なのかを必ず書いてください。
+- 一般論で終わらせず、パス名・API 名・エラー名などの具体的な名前を出してください。</code></pre>
+      <button class="learn-btn" data-copy>この文をコピー</button>
+    </details>
+
+  </div>
+
+  <!-- ============================ BASIC ============================ -->
+  <section class="layer basic">
+    <h2><span class="layer-tag">Basic</span>平文で流れているものを見る</h2>
+    <p class="layer-meta">所要 30分 / 初学者向け・必修。Burp は使いません。</p>
+
+    <h3>1. 送るものを用意する</h3>
+    <p>第1章の <code>[Basic] ログイン情報を保存する</code> で保存した内容が、そのまま送信されます。
+    まだなら先に保存しておいてください。</p>
+
+    <h3>2. HTTP で送る</h3>
+    <p>アプリの <code>第3章 → [Basic] ログイン情報を送信する</code> を開き、
+    <b>「1. HTTP で送る」</b> を押します。</p>
+
+    <h3>3. サーバ側の画面を見る</h3>
+<pre class="out"><code>=== [HTTP ] POST /login ===
+  Content-Type: application/x-www-form-urlencoded
+  ---- body ----
+  username=alice&password=P@ssw0rd123</code></pre>
+
+    <div class="callout vuln">
+      <strong>確認できたこと</strong><br>
+      端末の中では OS が守っていた認証情報が、経路上ではそのままの文字列で流れています。
+      サーバの画面に出ている <code>username=alice&amp;password=P@ssw0rd123</code> が、それです。
+      同じ Wi-Fi にいる人、経路上のルータ、プロキシ、誰でも読めます。
+    </div>
+
+    <p class="stance">ここで初めて端末の外に出ました。いま立っていたのは <b>通信路にいる人</b> です（<a href="intro-sandbox.html#positions">攻撃者の立場</a>）。端末の中には一歩も入っていません。</p>
+
+    <p><b>Basic はここまで。</b></p>
+  </section>
+
+  <!-- ============================ STANDARD ============================ -->
+  <section class="layer standard">
+    <h2><span class="layer-tag">Standard</span>HTTPS は何を守っているのか</h2>
+    <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
+
+    <div class="learn-step" data-step="ch3-s4"></div>
+    <div class="learn-step" data-step="ch3-s5"></div>
+    <div class="learn-step" data-step="ch3-s6"></div>
+
+    <h3>4. HTTPS で送る</h3>
+    <p><b>「2. HTTPS で送る」</b>を押します。失敗します。</p>
+<pre class="out"><code>[失敗] SSLHandshakeException
+Trust anchor for certification path not found.</code></pre>
+
+    <div class="callout blocked">
+      <strong>これは通信が壊れたのではない</strong><br>
+      暗号が失敗したわけでも、サーバが落ちているわけでもありません。
+      <b>「この相手を信じてよい」と判断できなかった</b>という意味です。
+      モックサーバの証明書は教材用の CA が発行したもので、<b>その CA が端末の信頼ストアに載っていません</b>。
+      証明書自体は正しく作られていて、期限も切れていません。
+      足りないのは「発行者を端末が知っているか」だけです。<br>
+      TLS が守っているのは「盗み見」だけではなく、<b>「相手が誰か」</b>でもあります。
+    </div>
+
+    <h3>5. 差分実験：CA をどこに入れるかで結果が変わる</h3>
+    <p>Burp Suite（または手順の証明書）の CA 証明書を端末に入れて、毎回「2. HTTPS で送る」を押します。
+    <b>アプリのコードは一切変えません。</b></p>
+
+    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
+<table class="matrix">
+      <tr><th>CA の置き場所</th><th>アプリ設定</th><th>HTTPS を復号できるか</th></tr>
+      <tr><td>入れない</td><td>既定</td><td class="blank">?</td></tr>
+      <tr><td>ユーザー証明書として追加</td><td>既定</td><td class="blank">?</td></tr>
+      <tr><td>ユーザー証明書として追加</td><td>NSC で <code>user</code> を許可</td><td class="blank">?</td></tr>
+      <tr><td>システム証明書として追加（要 root）</td><td>既定</td><td class="blank">?</td></tr>
+    </table>
+<details class="hint"><summary>答え合わせ</summary>
+<table class="matrix">
+      <tr><th>CA の置き場所</th><th>アプリ設定</th><th>HTTPS を復号できるか</th></tr>
+      <tr><td>入れない</td><td>既定</td><td class="ok">できない</td></tr>
+      <tr><td>ユーザー証明書として追加</td><td>既定</td><td class="ok">できない</td></tr>
+      <tr><td>ユーザー証明書として追加</td><td>NSC で <code>user</code> を許可</td><td class="ng">できる</td></tr>
+      <tr><td>システム証明書として追加（要 root）</td><td>既定</td><td class="ng">できる</td></tr>
+    </table>
+</details>
+
+    <p>3行目は <code>app/src/main/res/xml/network_security_config.xml</code> の
+    コメントアウトを外して再ビルドすると再現できます。</p>
+<pre><code>&lt;trust-anchors&gt;
+    &lt;certificates src="system" /&gt;
+    &lt;certificates src="user" /&gt;   &lt;!-- ← これを有効にする --&gt;
+&lt;/trust-anchors&gt;</code></pre>
+<pre><code>./gradlew :app:installDebug</code></pre>
+
+    <div class="callout note">
+      <strong>ここが第3章の核心</strong><br>
+      Burp で HTTPS が読めなかったのは、暗号が強かったからではありません。
+      <b>アプリがその CA を信頼していなかったから</b>です。
+      Android 7 (API 24) 以降、アプリは既定でユーザー追加の CA を信頼しません。
+      つまり「HTTPS だから安全」ではなく、<b>信頼ストアに何が載っているかで安全性が決まります</b>。
+      「HTTPS なので問題ありません」と書かれた診断結果を見たら、
+      まず信頼ストアの話に置き換えて読み直してください。
+    </div>
+
+    <h3>6. 止まるはずの攻撃：ピン留め</h3>
+    <p><b>「3. HTTPS + 公開鍵ピン留めで送る」</b>を押します。この経路は2段階で判定します。</p>
+    <ol>
+      <li><b>通常の TLS 検証</b>。アプリに同梱した教材用 CA（<code>res/raw/mockserver_ca.pem</code>）まで
+        チェーンを辿れるか、有効期限は切れていないか、発行者は正しいかを見ます。</li>
+      <li><b>ピンの照合</b>。そのうえで、相手の公開鍵のハッシュが
+        <code>NetworkActivity.expectedPin</code> と一致するかを見ます。</li>
+    </ol>
+    <p>Burp を挟んだ状態だと、提示されるのは Burp が作った証明書なので、<b>①で落ちます</b>。</p>
+<pre class="out"><code>[① 通常の TLS 検証で拒否] チェーンを検証できない
+...
+信頼できる発行者まで辿れていない。ピンの照合はここまで来ていない。</code></pre>
+    <p>Burp を外すと、今度は①を通って②で落ちます。</p>
+<pre class="out"><code>[② ピン不一致で切断]
+期待したピン: AAAAAAAA...
+実際のピン  : E5/ggWvD...=
+通常の TLS 検証は通っている。落ちたのはピンの照合のほう。</code></pre>
+    <p>アプリの <code>NetworkActivity.expectedPin</code> に、モックサーバ起動時に表示された
+    ピン（または上の「実際のピン」）を貼り付けて再ビルドすると、初めて通ります。</p>
+
+    <div class="callout blocked">
+      <strong>これも「OS が守った」ではない</strong><br>
+      ①の材料（どの CA を信じるか）も②の判定も、決めているのは<b>アプリ</b>です。
+      だから Burp の CA を端末に入れても通りません。<br>
+      第1章・第2章では OS が守っていました。ここでは<b>アプリが自分で守っています</b>。
+      守る主体が違う点に注意してください。
+    </div>
+
+    <div class="callout note">
+      <strong>順番を逆にすると、安全な実装ではなくなります</strong><br>
+      ピンだけを照合して通常の検証を飛ばす実装は、教材やブログでよく見かけます。
+      ですがそれは「ピンが一致すること」しか確認しておらず、
+      チェーンも有効期限も発行者も誰も見ていません。<b>次の手順でそれを確かめます。</b><br><br>
+      そもそも手書きするより、NSC に <code>&lt;pin-set&gt;</code> を書くほうが安全です。
+      プラットフォームが通常の検証を済ませてからピンを見るので、順番を間違えようがありません。
+      <code>app/src/main/res/xml/network_security_config.xml</code> にコメントで例を置いてあります。<br><br>
+      <b>そして Android の公式ドキュメントは、一般のアプリにピンニングを推奨していません。</b>
+      サーバの鍵を更新したのにアプリを更新できず、自分のユーザー全員が接続できなくなる、
+      という運用事故のほうが現実的なリスクだからです。
+      入れるなら予備のピンを併記し、<code>expiration</code> を切ってください。
+    </div>
+
+    <div class="learn-step" data-step="ch3-s7"></div>
+
+    <h3>7. ピンは合っているのに、証明書の期限が切れている</h3>
+    <p>モックサーバを期限切れの証明書で起動し直します。
+    <b>サーバの鍵は同じなので、公開鍵ピンは一致したままです。</b></p>
+<pre><code>python3 tools/mockserver/server.py --expired</code></pre>
+<pre class="out"><code>[*] サーバ証明書: server-cert-expired.pem  ← 期限切れ。ピンは一致するが通常の TLS 検証で落ちるはず
+[*] 公開鍵ピン (NetworkActivity.expectedPin に貼る): E5/ggWvD...=</code></pre>
+    <p>アプリは何も変えずに、もう一度ピン留めの経路で送ります。</p>
+<pre class="out"><code>[① 通常の TLS 検証で拒否] 証明書の有効期限切れ
+...
+ピンが一致していても、ここで落ちれば通らない。</code></pre>
+
+    <div class="callout vuln">
+      <strong>ピンは「相手が正しい」ことを意味しません</strong><br>
+      ピンが言えるのは<b>「この公開鍵であること」だけ</b>です。
+      その証明書がいま有効かどうか、信頼できる発行者が出したものかどうかは、
+      別の検証が見ています。<br>
+      <code>checkServerTrusted</code> を空にしてピンだけ見る実装にすると、この行が<b>通ってしまいます</b>。
+      「ピン留めを入れました」という報告を受け取ったら、
+      <b>通常の検証を先に通しているかを必ず聞いてください。</b>
+    </div>
+
+    <p><b>Standard はここまで。</b></p>
+  </section>
+
+  <!-- ============================ DEEP ============================ -->
+  <section class="layer deep">
+    <h2><span class="layer-tag">Deep</span>アプリの防御はアプリの中にある、ということ</h2>
+    <p class="layer-meta">任意。Frida を使います。</p>
+
+    <h3>8. ピン留めは外せる</h3>
+    <p>ピン照合をしているのはアプリのコードです。ということは、
+    アプリのプロセスに入り込める相手にはその判定を書き換えられます。
+    <code>checkServerTrusted</code> を何もしない関数に差し替えれば、ピン留めは無効になります。</p>
+
+    <div class="callout note">
+      <strong>第1章 手順11 と同じ構造</strong><br>
+      鍵を Keystore に置いても、プロセスに入られたら鍵は使われます。<br>
+      ピンをコードに書いても、プロセスに入られたら判定は飛ばされます。<br>
+      <b>クライアント側の防御は、クライアントを支配した相手には効きません。</b>
+      これは第4章の主題そのものです。
+    </div>
+
+    <h3>9. では何のためにピン留めするのか</h3>
+    <p>「破れるなら意味がない」ではありません。想定する攻撃者が違います。</p>
+    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
+<table class="matrix">
+      <tr><th>攻撃者</th><th>HTTPS のみ</th><th>+ ピン留め</th></tr>
+      <tr><td>同じ Wi-Fi にいる第三者</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>端末に CA を入れられる立場（MDM・保護者・調査者）</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>端末を root 化して Frida を使える相手</td><td class="blank">?</td><td class="blank">?</td></tr>
+    </table>
+<details class="hint"><summary>答え合わせ</summary>
+<table class="matrix">
+      <tr><th>攻撃者</th><th>HTTPS のみ</th><th>+ ピン留め</th></tr>
+      <tr><td>同じ Wi-Fi にいる第三者</td><td class="ok">防げる</td><td class="ok">防げる</td></tr>
+      <tr><td>端末に CA を入れられる立場（MDM・保護者・調査者）</td><td class="ng">防げない</td><td class="ok">防げる</td></tr>
+      <tr><td>端末を root 化して Frida を使える相手</td><td class="ng">防げない</td><td class="ng">防げない</td></tr>
+    </table>
+</details>
+    <p><b>「守れる／守れない」ではなく「誰から守れるか」で書けるようになること。</b></p>
+  </section>
+
+  <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
+  <div class="verdict">
+    <h2>対策は効いたか。どこまで守るか</h2>
+    <p>「HTTP をやめて HTTPS にしました」で終わらせません。
+    <b>何から守れて、何から守れないのかを判定します。</b>
+    HTTPS にした時点で満足してしまうと、ピン留めが何のためにあるのか分からないまま終わります。</p>
+    <table class="matrix">
+      <tr><th>攻撃者の位置</th><th>HTTP</th><th>HTTPS（既定）</th><th>HTTPS + ピン留め</th></tr>
+      <tr><td>同じ Wi-Fi で覗いているだけ</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>端末にユーザー証明書を入れられる</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>端末が root 化されている</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>アプリのプロセスに Frida を入れられる</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+    </table>
+    <details class="hint">
+      <summary>判定</summary>
+      <p>HTTPS が守るのは <b>経路上の他人</b> までです。
+      端末の持ち主が敵になった瞬間、trust anchor は持ち主が足せます。
+      <b>「HTTPS だから安全」は、攻撃者が経路上にいる場合に限った話です。</b></p>
+      <p>ピン留めは一段強いのですが、これも<b>アプリの中の判定</b>なので、
+      プロセスを取られれば書き換えられます（Deep）。
+      通信の防御は、端末そのものを敵に渡した時点で全部やり直しになります。</p>
+      <p>逆に言えば、ピン留めが守るのは「利用者が騙されて偽の CA を入れてしまった」場合です。
+      <b>誰を想定するかで、入れるべきかどうかが変わります。</b></p>
+    </details>
+  </div>
+
+  <h2>章末：手を動かした結果を言葉にする</h2>
+  <p>ここまでで観察は終わりました。ですが観察しただけでは理解になりません。
+  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書きます。書けなければ、まだ分かっていません。</p>
+<p><a class="learn-btn" href="explain.html?ch=ch3">説明を書く</a></p>
+
+  <h3>理解を確認する</h3>
+  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
+<p><a class="learn-btn" href="quiz.html?ch=ch3">テストを受ける</a></p>
+
+  <details class="hint">
+    <summary>説明を書き終えてから開く：到達点の目安</summary>
+    <ul>
+    <li>端末内で OS が守っていたデータも、経路に出れば別の話になります</li>
+    <li>HTTPS が守るのは盗み見だけでなく「相手が誰か」でもあります</li>
+    <li>Burp で読めるかどうかは、暗号の強さではなく信頼ストアの中身で決まります</li>
+    <li>ピン留めは通常の TLS 検証の<b>上乗せ</b>であって、置き換えではありません</li>
+    <li>ピン留めはアプリ自身の防御であり、プロセスを取られると無効になります</li>
+    <li>ピン留めには鍵更新・期限切れという運用リスクがあり、Android は一般のアプリには推奨していません</li>
+  </ul>
+  </details>
+
+  <div class="pager">
+    <a href="chapter2-ipc.html">← 第2章</a>
+    <a href="chapter4-tee.html">第4章 実行環境境界 →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

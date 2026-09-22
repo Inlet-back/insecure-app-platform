@@ -1,0 +1,74 @@
+[
+  {
+    "id": "o1-1",
+    "chapter": "ch1",
+    "verdict": "no",
+    "claim": "診断: InsecureStorageActivity は認証情報を平文保存している (Critical)。\n修正案: SharedPreferences を SecurePreferences に置き換え、setEncrypted(true) を指定してください。これで保存データは自動的に AES-256 で暗号化されます。",
+    "patch": "val prefs = SecurePreferences.getInstance(this)\nprefs.setEncrypted(true)\nprefs.putString(\"password\", password)",
+    "explain": "診断そのものは正しい。しかし修正案が誤り。androidx にも Android 標準にも SecurePreferences というクラスは存在せず、setEncrypted というメソッドもない。もっともらしい名前だが実在しない API で、ビルドすら通らない。生成 AI がよく出す典型的な誤りで、コードを読むだけでは正しそうに見えてしまう。",
+    "how_to_check": "実際にそのコードを書いてビルドする。Unresolved reference で落ちる。あるいは androidx.security の公式クラス名 (EncryptedSharedPreferences / MasterKey) と照合する。"
+  },
+  {
+    "id": "o1-2",
+    "chapter": "ch1",
+    "verdict": "no",
+    "claim": "診断: shared_prefs のファイル名が user_session であることが問題です。攻撃者はこの名前を手がかりに認証情報を探します (High)。\n修正案: ファイル名をランダムな文字列に変更し、キー名も推測されにくいものにしてください。",
+    "patch": "getSharedPreferences(\"a8f3c21e\", MODE_PRIVATE)\n  .edit().putString(\"k1\", password).apply()",
+    "explain": "誤り。攻撃者は shared_prefs ディレクトリの中身を一覧できるので、名前を変えても1コマンドで見つかる。しかも値は平文のまま。これは修正ではなく隠蔽で、脆弱性はそのまま残る。「難読化は防御ではない」という第4章の論点と同じ構造。",
+    "how_to_check": "run-as com.example.insecureappplatform ls shared_prefs/ を実行する。ファイル名が何であっても一覧に出る。cat すれば値は平文のまま。"
+  },
+  {
+    "id": "o1-3",
+    "chapter": "ch1",
+    "verdict": "no",
+    "claim": "診断: 平文保存を検出しました (Critical)。\n修正案: AES で暗号化してから保存してください。鍵はアプリ内に定数として持ち、AES/ECB/PKCS5Padding を使用します。これにより root 化端末でも情報は保護されます。",
+    "patch": "val key = SecretKeySpec(\"1234567890abcdef\".toByteArray(), \"AES\")\nval c = Cipher.getInstance(\"AES/ECB/PKCS5Padding\")\nc.init(Cipher.ENCRYPT_MODE, key)",
+    "explain": "誤り。3点ある。(1) 鍵が APK に埋まっているので誰でも取り出せる。(2) ECB なので同じ平文が同じ暗号文になり、値の変化の有無が漏れる。(3) 「root 化端末でも保護される」は誇張で、鍵が取れる以上むしろ保護されない。第4章 Basic でやったことがそのまま反証になる。",
+    "how_to_check": "この修正を入れた APK に対し、第4章 Basic の手順 (unzip -p base.apk 'classes*.dex' | strings | grep) を実行する。鍵が出る。出た鍵を openssl に渡せば復号できる。"
+  },
+  {
+    "id": "o1-4",
+    "chapter": "ch1",
+    "verdict": "no",
+    "claim": "診断: EncryptedSharedPreferences に修正済みのコードを再検査しました。root 権限を持つ攻撃者に対しても安全であり、本項目はクローズ可能です (No Issue)。",
+    "patch": "",
+    "explain": "誤り。見逃し (false negative) の例。オフラインで取り出したファイルしか持たない相手には確かに有効だが、プロセスに入り込める相手には無効。root はファイルを読むだけの立場ではなく、そこからプロセス内実行へ «進める» 立場なので、「root に対しても安全」とは言えない。第1章 Deep 手順11 で、鍵を取り出さないまま平文が得られた。「安全」と言い切っている点、および攻撃者の能力を場合分けしていない点が問題。",
+    "how_to_check": "frida -U -F -l tools/frida/ch1-read-encrypted-prefs.js を実行する。平文が出る。"
+  },
+  {
+    "id": "o1-5",
+    "chapter": "ch1",
+    "verdict": "yes",
+    "claim": "診断: 平文保存を検出 (Critical)。\n修正案: EncryptedSharedPreferences (鍵は Keystore の MasterKey) に置き換えてください。ただしこれは端末やファイルを奪われた場合の防御であり、root 化 + 動的解析が可能な攻撃者に対しては復号を防げません。機密度が高い値はそもそも端末に保存しない設計を検討してください。",
+    "patch": "",
+    "explain": "これは正しい。診断も修正案も妥当で、さらに防御の限界と適用範囲まで書いている。「安全になる」と言い切らず、誰から守れるかを明示している点が、他の4件との決定的な違い。AI の出力を評価するときは、断言しているかどうかが一つの手がかりになる。",
+    "how_to_check": "実際に EncryptedSharedPreferences に置き換え、(a) run-as で cat、(b) root で cat、(c) Frida の3通りを試す。主張どおり (a)(b) は防げて (c) は防げないことを確認する。"
+  },
+  {
+    "id": "o4-1",
+    "chapter": "ch4",
+    "verdict": "no",
+    "claim": "診断: CryptoActivity にハードコード鍵を検出 (Critical)。\n修正案: ProGuard/R8 の難読化を有効にし、鍵の文字列を分割して連結するようにしてください。これにより静的解析での抽出を防げます。",
+    "patch": "val key = (\"1234\" + \"5678\" + \"90ab\" + \"cdef\").toByteArray()",
+    "explain": "誤り。文字列の分割はコンパイル時に畳み込まれることが多く、そのまま dex に載る。仮に載らなくても、アプリは実行時に鍵を組み立てて使うので、その瞬間を Frida で捕まえられる。静的解析を少し面倒にするだけで、鍵がクライアントにある事実は変わらない。",
+    "how_to_check": "分割した文字列を入れてビルドし、dex を strings で grep する。連結後の文字列が出るか確認する。出なくても、Cipher.init をフックすれば鍵は取れる。"
+  },
+  {
+    "id": "o4-2",
+    "chapter": "ch4",
+    "verdict": "no",
+    "claim": "診断: AndroidKeyStore を使用しているため、鍵は TEE に保護されています。動的解析による復号は不可能であり、本項目はリスクなしと判定します (No Issue)。",
+    "patch": "",
+    "explain": "誤り。2か所ある。(1) Android Keystore の鍵が «常に» TEE で守られるとは限らない。保護レベルは端末次第で、KeyInfo.getSecurityLevel() が SOFTWARE を返す構成もある（エミュレータがそう）。断定するなら、その端末の実測値を添える必要がある。(2) Keystore が守るのは鍵の保持であって使用ではない。第4章 Deep 手順10 で、getEncoded() が null のまま復号に成功した。使用まで縛りたければ setUserAuthenticationRequired のように、条件を Keystore 側に置く。",
+    "how_to_check": "アプリの「鍵がどこにあるか調べる」で KeyInfo.getSecurityLevel() の実測値を見る。そのうえで frida -U -F -l tools/frida/ch4-use-keystore-key.js を実行する。認証なしの鍵は復号結果が出る。"
+  },
+  {
+    "id": "o3-1",
+    "chapter": "ch3",
+    "verdict": "no",
+    "claim": "診断: HTTPS 通信で中間者攻撃のリスクがあります (Medium)。\n修正案: 証明書ピンニングを実装してください。checkServerTrusted の中でサーバ証明書の公開鍵ハッシュを比較し、一致しなければ例外を投げます。端末の信頼ストアを見ないので、Burp の CA を入れられても安全です。",
+    "patch": "override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {\n    val pin = sha256(chain[0].publicKey.encoded)\n    if (pin != expectedPin) throw CertificateException(\"pin mismatch\")\n}",
+    "explain": "誤り。ピンの比較そのものは合っているが、«通常の TLS 検証を1つも行っていない»。チェーンも有効期限も発行者も見ていないので、ピンが一致すれば期限切れや失効した証明書でも通る。ピン留めは通常の検証の置き換えではなく上乗せで、先にプラットフォーム既定の TrustManager に検証させてから、そのあとでピンを照合しなければならない。加えて、Android の公式ドキュメントは一般のアプリにピンニングを推奨しておらず、やるなら Network Security Config の pin-set で宣言するほうが順番を間違えようがない。",
+    "how_to_check": "python3 tools/mockserver/server.py --expired でモックサーバを起動し直す。サーバの鍵は同じなのでピンは一致したまま、証明書の期限だけが切れる。この修正案のとおりに書くと通ってしまい、通常の検証を先に通す実装なら拒否される（第3章 手順7）。"
+  }
+]

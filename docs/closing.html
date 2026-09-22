@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>終章 この先どこで調べるか | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>終章 — この先どこで調べるか</h1>
+  <p class="subtitle">4章で使った考え方を、教材の外へ持ち出すための地図</p>
+
+  <div class="callout note">
+    <strong>この章のゴール</strong><br>
+    新しい脆弱性を覚えることではありません。
+    <b>教材に載っていない対象に出会ったとき、どこを見て、何を自分で確かめるか</b>を決められることです。
+  </div>
+
+  <h2>1. 4章を1行ずつに畳む</h2>
+
+  <p>細かい手順は忘れてかまいません。残すのはこの4行だけです。</p>
+
+  <table>
+    <tr><th>章</th><th>持ち帰る1行</th></tr>
+    <tr>
+      <td>第1章 プロセス境界</td>
+      <td>アプリ同士を隔てているのは<b>アプリのコードではなく OS</b> なので、
+        隔離が効く条件も崩れる条件も、OS 側を見に行かないと分かりません</td>
+    </tr>
+    <tr>
+      <td>第2章 IPC 境界</td>
+      <td>ファイルの権限を一切変えなくても、<b>自分で開けた窓口</b>から同じデータは出ていきます。
+        誰が呼んでいるかを確かめるのは、OS ではなくアプリの仕事です</td>
+    </tr>
+    <tr>
+      <td>第3章 ネットワーク境界</td>
+      <td>HTTPS が読まれるかどうかは暗号の強さではなく、
+        <b>端末が誰を信じているか</b>（トラストストアの中身）で決まります</td>
+    </tr>
+    <tr>
+      <td>第4章 実行環境境界</td>
+      <td>鍵が<b>取り出せない</b>ことと、鍵が<b>使われない</b>ことは別です。
+        クライアント側の判定は、クライアントを支配した相手には効きません</td>
+    </tr>
+  </table>
+
+  <h2>2. 4章に共通していた1つの問い</h2>
+
+  <div class="callout fix">
+    <strong>その対策は「何から」守るのか</strong><br>
+    守れないケースが見つかったとき、それは対策の失敗とは限りません。多くは<b>射程の外</b>にあるだけです。<br>
+    「安全です」と言う代わりに、<b>どの相手までなら守れるかを言える</b>こと。それがこの教材の到達点です。
+  </div>
+
+  <p>この問いは、新しい技術に出会っても形を変えません。
+  生体認証でも、パスキーでも、難読化でも、聞くことは同じ3つです。</p>
+
+  <ul>
+    <li>攻撃者はどこにいる想定か（ネットワーク上／同じ端末の別アプリ／端末の持ち主／root）</li>
+    <li>その防御を<b>執行しているのは誰</b>か（アプリのコードか、OS か、サーバか、ハードウェアか）</li>
+    <li>執行者を攻撃者が支配できる場合、その防御はどうなるか</li>
+  </ul>
+
+  <p>3つ目に「無力になる」という答えが出たなら、それは実装のミスではなく<b>設計上の射程</b>です。
+  そこまで言い切れるようになれば、AI が出してきた「これで安全です」を、自分の手で検証できます。</p>
+
+  <h2>3. 調べる先（一次情報）</h2>
+
+  <p>検索して出てくるブログより、まずこの3つを見てください。どれも無料で、更新され続けています。</p>
+
+  <h3>OWASP MAS（Mobile Application Security）</h3>
+  <table>
+    <tr><th>名前</th><th>何が書いてあるか</th><th>いつ使うか</th></tr>
+    <tr>
+      <td><b>MASVS</b><br>（検証標準）</td>
+      <td>モバイルアプリが満たすべき要件の一覧。STORAGE / CRYPTO / AUTH /
+        NETWORK / PLATFORM / CODE / RESILIENCE に分かれている</td>
+      <td><b>何を確かめるべきか</b>の目次として。
+        各章の先頭にあったバッジ（<code>MASVS-STORAGE-1</code> など）はこの番号です</td>
+    </tr>
+    <tr>
+      <td><b>MASTG</b><br>（テストガイド）</td>
+      <td>その要件を<b>どう確かめるか</b>の具体的な手順。コマンド付き</td>
+      <td>手を動かすとき。この教材の各章は、MASTG の手順を
+        「なぜそうなるか」側に寄せて組み直したものです</td>
+    </tr>
+    <tr>
+      <td><b>MAS Checklist</b></td>
+      <td>MASVS の要件を確認用リストにしたもの</td>
+      <td>診断の抜け漏れ確認に</td>
+    </tr>
+  </table>
+  <p><code>owasp.org/mas/</code> から3つともたどれます。</p>
+
+  <h3>Android の公式ドキュメント</h3>
+  <p>「この API は本当は何をしているのか」を確かめる先です。
+  この教材で触った箇所に対応するページを挙げておきます。</p>
+  <table>
+    <tr><th>章</th><th>見るところ</th></tr>
+    <tr><td>第1章</td><td>アプリのサンドボックス（Application Sandbox）、データとファイルの保存、
+      Security library（EncryptedSharedPreferences とその現状）</td></tr>
+    <tr><td>第2章</td><td>アプリのコンポーネント、<code>&lt;provider&gt;</code> /
+      <code>&lt;activity&gt;</code> の <code>android:exported</code>、
+      <code>&lt;permission&gt;</code> の <code>protectionLevel</code>、Binder と AIDL</td></tr>
+    <tr><td>第3章</td><td>Network Security Configuration、
+      <code>cleartextTrafficPermitted</code>、証明書のピン留めに関する注意</td></tr>
+    <tr><td>第4章</td><td>Android Keystore システム、<code>KeyGenParameterSpec</code>、
+      <code>setUserAuthenticationRequired</code>、StrongBox、鍵の attestation、Play Integrity</td></tr>
+  </table>
+  <p class="who"><b>読み方のコツがひとつあります。</b>
+  公式ドキュメントは「こう書けば安全です」という書き方をするので、そこで読み終えずに、
+  <b>その安全を誰が執行しているのか</b>を探しながら読んでください。
+  執行者がどこにも書かれていない場合、たいていは<b>アプリ自身</b>が執行者になっています。
+  つまり、アプリを支配されたら終わる種類の防御です。</p>
+
+  <h3>変化を追う</h3>
+  <ul>
+    <li><b>Android Developers の「動作の変更点」</b>：targetSdk を上げると何が変わるか。
+      <code>exported</code> の明示が必須になった話も、平文通信が既定で禁止になった話もここにあります</li>
+    <li><b>Android Security Bulletin</b>：毎月の修正一覧。OS 側の守りが更新され続けているのが分かります</li>
+    <li><b>CWE</b>：脆弱性の型の共通名。診断結果や AI の出力に付いている番号はこれです</li>
+  </ul>
+
+  <h2>4. 次の一歩</h2>
+
+  <p>この教材のアプリは、確かめ方を身につけるための練習台でした。
+  同じ6段を教材の外で回せるようになったら卒業です。</p>
+
+  <ol>
+    <li><b>自分が書いたアプリを対象にする。</b>
+      まず第2章のやり方で Manifest を見て、<code>exported</code> になっているものを数え、
+      それぞれについて「外から呼ばれても困らないか」を答えてみてください</li>
+    <li><b>AI に診断させて、判定する。</b>
+      自分のコードを AI に見せて指摘を出させ、この教材と同じように
+      <b>実験で棄却するか採用するかを決めます</b>。これが <a href="oracle.html">オラクル演習</a>の実物版です</li>
+    <li><b>MASTG から1項目選んで通す。</b>
+      教材になかったテスト（WebView、ログ出力、バックアップなど）を1つ選び、
+      ①〜⑥の形に自分で組み直してみてください</li>
+  </ol>
+
+  <div class="callout blocked">
+    <strong>やってよい対象の線引き</strong><br>
+    手を動かしてよいのは、<b>自分が作ったアプリ</b>、<b>自分で用意した検証端末に自分で入れたアプリ</b>、
+    そして<b>許可が明示されている対象</b>（バグバウンティのスコープなど）だけです。<br>
+    他人のアプリやサービスに対して同じことをすると、技術的にはまったく同じ操作でも扱いが変わります。
+    <b>境界にあるのは許可の有無</b>であって、手口の強さではありません。
+  </div>
+
+  <h2>5. 最後に</h2>
+
+  <p>この教材で身につけたのは、4つの攻撃手順ではありません。
+  主張が出てきたときに、それを実験に翻訳して確かめる手つきのほうです。</p>
+
+  <p>ツールも AI も、この先もっと賢くなります。
+  それでも「その出力は本当か」を確かめる人は、まだ必要とされています。</p>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="quiz.html">概念テスト（事後）</a>
+    <a class="learn-btn" href="oracle.html">オラクル演習</a>
+    <a class="learn-btn" href="progress.html">自分の記録を見る</a>
+  </div>
+
+  <div class="pager">
+    <a href="chapter4-tee.html">← 第4章</a>
+    <a href="index.html">Home →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

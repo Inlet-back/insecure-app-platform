@@ -1,0 +1,5 @@
+# 古い自動生成の証明書（make-teaching-certs.sh に移行する前のもの）
+cert.pem
+key.pem
+# 起動時に作る leaf + CA の連結ファイル
+.chain.pem

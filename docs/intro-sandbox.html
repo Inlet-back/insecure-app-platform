@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>導入 モバイルのセキュリティは何でできているか | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>導入 — モバイルのセキュリティは何でできているか</h1>
+  <p class="subtitle">読むだけ・15分。手を動かす前の座学はこの1ページだけです</p>
+
+  <div class="badges">
+    <span class="badge">座学のみ</span>
+    <span class="badge">15分</span>
+  </div>
+
+  <div class="callout note">
+    <strong>このページのゴール</strong><br>
+    モバイルのセキュリティが何でできているかを押さえ、
+    <b>これから4章で何を確かめに行くのか</b>と<b>自分がどの立場で確かめるのか</b>を
+    先に決めておくためのページです。
+    あわせて、この先ずっと使う<b>問いの立て方</b>を3つ渡します。
+  </div>
+
+  <h2>1. 3つの問いから始めます</h2>
+
+  <p>モバイルのセキュリティが何でできているのかを、3つの問いと答えで見ます。</p>
+
+  <div class="qa">
+    <p class="qa-q">Q1. モバイルアプリには、「入れたら即マルウェア感染」というイメージがありません。なぜですか。</p>
+
+    <p class="qa-a">理由はあります。ただし、アプリを信用してよいという話とは違います。
+    PC と比べたときに、OS がアプリに渡している<b>権限の単位</b>が違うのです。</p>
+
+    <p>PC では、あなたがログインして起動したソフトは、あなたの権限をそのまま受け取ります。
+    ユーザーはあなた1人ぶんしかないので、長く使っている表計算ソフトも、
+    さっき拾ってきたばかりのツールも、同じ「あなた」として同じ書類に手が届きます。</p>
+
+    <p>Android は、アプリを1つインストールするたびに Linux のユーザーを1人作ります。
+    第1章で <code>ls -l</code> を打つと <code>u0_a175</code> という名前で出てきます。
+    アプリ同士は、同じ端末の中で動いている別々のユーザーです。</p>
+
+    <p>つまり、あまり警戒せずに入れられているのは、アプリが信用できるからではなく、
+    <b>OS が最初から信用しない前提で置き場所を分けているから</b>です。</p>
+  </div>
+
+  <div class="qa">
+    <p class="qa-q">Q2. それは仮想メモリによる隔離のことですか。そして、他のアプリのデータが読めないとき、止めているのは誰ですか。</p>
+
+    <p class="qa-a">仮想メモリの隔離とは別の話です。プロセスごとにメモリ空間を分ける仕組みは PC にも昔からあります。</p>
+
+    <p>違うのは、ファイルと IPC とプロセス操作について、<b>権限を誰の単位で数えるか</b>です。
+    PC は「ユーザー」単位なので、同じユーザーが起動したソフトは同じ UID を持ち、互いのファイルを直接開けます。
+    Android は「アプリ」単位なので、他のアプリの持ち物は所有者が一致せず、カーネルに弾かれます。
+    どうしても読みたければ、持ち主のアプリに <b>IPC で仲介してもらう</b>しかありません。</p>
+
+    <p>止めているのはアプリのコードではなく、カーネルです。
+    ファイルを開こうとした時点で、持ち主の UID と <code>rw-rw----</code> のような並びが照合されます。
+    守られている側のアプリは「守ってください」と頼んですらいないので、
+    <b>なぜ守られているのかの答えは、アプリのソースをどれだけ読んでも書いていません</b>。</p>
+
+    <p>ついでに範囲を押さえておきます。Unix でいう「ファイル」は書類だけを指しません。
+    <code>/dev</code> のデバイスも <code>/proc</code> の中身も同じ枠組みで扱われるので、
+    カメラやマイクに触れるかどうかも、この照合の上に乗っています。</p>
+  </div>
+
+  <div class="qa">
+    <p class="qa-q">Q3. では、モバイルは安全なのですか。</p>
+
+    <p class="qa-a">安全になったのではなく、<b>攻撃の行き先が移った</b>だけです。</p>
+
+    <p>塞がったのは、他のアプリが勝手にファイルを直接開く経路です。
+    ここは本当に塞がっていて、第1章では読めることと読めないことの両方を自分の手で確かめます。</p>
+
+    <p>代わりに、隔離があるからこそ生まれた攻撃があります。
+    Q2 で出てきた<b>仲介の窓口</b>の作り方を誤って外から入られる、
+    あるいは権限を持っている側に代わりに仕事をさせる、といった形です。
+    端末の外に出る通信は、誰でも通れる場所を通ります。そして、土台ごと壊しにくる人もいます。</p>
+
+    <p>ここで1つ押さえておきます。カメラを扱う <code>cameraserver</code> のようなプロセスは、
+    カーネルとは別の層にいます。専用のユーザーと SELinux のラベルを与えられた、
+    ユーザー空間の特権プロセスです。この手の仕組み自体は PC にもあって、
+    Linux の <code>polkit</code>、Windows のサービス、macOS のデーモンがそれにあたります。</p>
+
+    <p class="who"><b>ここが差の出るところです。</b>
+    違うのは仕組みの有無ではなく<b>強制力</b>のほうです。
+    PC では、特権プロセスを迂回して一般のソフトがデバイスを直接開けてしまうことがよくあります。
+    Android は SELinux で迂回路そのものを塞いでいます。
+    隔離が「守っている」と言えるのは、迂回できないところまで含めて見たときです。</p>
+
+    <p>迂回できないので、攻撃者の労力はより下の層に集中します。
+    移った先の4つが、そのままこの教材の4つの章です。</p>
+  </div>
+
+  <h2>2. いま出てきたものを、図と名前で押さえる</h2>
+
+  <p>3つの答えに出てきた「箱」には実体があります。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 300" role="img" aria-label="1台の端末の中で、アプリごとに別の箱（UID）に閉じ込められている図">
+      <rect class="plate" x="8" y="8" width="704" height="284" rx="10"/>
+      <text class="t-sm" x="24" y="32">1台の端末（Android）</text>
+
+      <rect class="wall-fill" x="40" y="52" width="250" height="206" rx="8"/>
+      <rect class="wall" x="40" y="52" width="250" height="206" rx="8"/>
+      <text class="t-b" x="60" y="80">アプリ A</text>
+      <text class="t-sm mono" x="60" y="100">uid=10175 / u0_a175</text>
+      <rect class="card" x="60" y="116" width="210" height="60" rx="6"/>
+      <text class="t-sm mono" x="72" y="138">/data/data/&lt;pkgA&gt;/</text>
+      <text class="t-sm mono" x="72" y="158">shared_prefs/…xml</text>
+      <text class="t-sm" x="60" y="200">プロセスの隔離</text>
+      <text class="t-sm" x="60" y="220">メモリも別</text>
+
+      <rect class="wall-fill" x="430" y="52" width="250" height="206" rx="8"/>
+      <rect class="wall" x="430" y="52" width="250" height="206" rx="8"/>
+      <text class="t-b" x="450" y="80">アプリ B</text>
+      <text class="t-sm mono" x="450" y="100">uid=10177 / u0_a177</text>
+      <rect class="card" x="450" y="116" width="210" height="60" rx="6"/>
+      <text class="t-sm mono" x="462" y="138">/data/data/&lt;pkgB&gt;/</text>
+      <text class="t-sm mono" x="462" y="158">shared_prefs/…xml</text>
+      <text class="t-sm" x="450" y="200">A のファイルは</text>
+      <text class="t-sm" x="450" y="220">見えない</text>
+
+      <line class="block" x1="300" y1="146" x2="348" y2="146"/>
+      <line class="block" x1="356" y1="136" x2="374" y2="156"/>
+      <line class="block" x1="374" y1="136" x2="356" y2="156"/>
+      <text class="t-ng" x="316" y="124">読めない</text>
+    </svg>
+    <figcaption>
+      アプリを1つ入れるたびに、OS は Linux のユーザーを1人作って専用のデータ領域を割り当てます。
+      この壁はアプリが自分で立てたものではありません。
+    </figcaption>
+  </figure>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 180" role="img" aria-label="他のアプリのファイルを開こうとすると、DAC の照合と SELinux の照合を順に通り、どちらでも止められる図">
+      <rect class="plate" x="8" y="8" width="704" height="164" rx="10"/>
+
+      <rect class="card" x="22" y="58" width="118" height="62" rx="6"/>
+      <text class="t-b" x="38" y="84">アプリ A</text>
+      <text class="t-sm mono" x="38" y="106">open()</text>
+
+      <line class="flow" x1="140" y1="90" x2="172" y2="90"/>
+
+      <rect class="card" x="174" y="38" width="164" height="104" rx="6"/>
+      <text class="t-b" x="190" y="64">DAC</text>
+      <text class="t-sm" x="190" y="86">持ち主の UID を照合</text>
+      <text class="t-sm mono" x="190" y="106">u0_a175 ≠ u0_a177</text>
+      <text class="t-ng" x="190" y="130">ここで止まる</text>
+      <line class="block" x1="302" y1="114" x2="318" y2="130"/>
+      <line class="block" x1="318" y1="114" x2="302" y2="130"/>
+
+      <line class="flow dash" x1="338" y1="90" x2="368" y2="90"/>
+
+      <rect class="card" x="370" y="38" width="164" height="104" rx="6"/>
+      <text class="t-b" x="386" y="64">SELinux</text>
+      <text class="t-sm" x="386" y="86">ラベルを照合</text>
+      <text class="t-sm mono" x="386" y="106">app_data_file</text>
+      <text class="t-ng" x="386" y="130">ここでも止まる</text>
+      <line class="block" x1="498" y1="114" x2="514" y2="130"/>
+      <line class="block" x1="514" y1="114" x2="498" y2="130"/>
+
+      <line class="flow dash" x1="534" y1="90" x2="564" y2="90"/>
+
+      <rect class="card" x="566" y="58" width="130" height="62" rx="6"/>
+      <text class="t-b" x="582" y="84">アプリ B</text>
+      <text class="t-sm mono" x="582" y="106">/data/data/…</text>
+    </svg>
+    <figcaption>
+      他のアプリのファイルを開こうとすると、持ち主の照合と、ラベルの照合を順に通ります。
+      どちらもカーネルの中の話で、アプリのコードは関係しません。
+    </figcaption>
+  </figure>
+
+  <dl>
+    <dt>UID（Linux ユーザー ID）</dt>
+    <dd>Android はアプリを1つインストールするたびに、<b>Linux のユーザーを1人作ります</b>。
+      つまりアプリ A とアプリ B は、同じ端末の中で動いている別々のユーザーであって、
+      ファイルの持ち主も、読み書きできるかどうかも、すべてこの ID で決まります。</dd>
+
+    <dt>専用のデータ領域</dt>
+    <dd><code>/data/data/&lt;パッケージ名&gt;/</code> がそのアプリの箱の中身です。
+      インストール時に OS が作り、そのアプリの UID の持ち物にします。</dd>
+
+    <dt>DAC（持ち主とパーミッションの照合）</dt>
+    <dd>開こうとしたファイルの持ち主と、<code>rw-rw----</code> のような並びを照合します。
+      第1章では <code>ls -l</code> を打って、この並びを実際に見ます。</dd>
+
+    <dt>SELinux</dt>
+    <dd>Linux のユーザー分離の<b>上にもう一層</b>載っている、カーネル側の仕組みです。
+      「この種類のプロセスは、この種類のファイルにしか触れない」を強制しています。
+      第1章で <code>ls -Z</code> を打つと、その存在だけは見えます。</dd>
+
+    <dt>プロセスの隔離</dt>
+    <dd>アプリはそれぞれ別のプロセスとして動きます。
+      他のアプリのメモリを覗くことは、普通の方法ではできません。
+      ただしこれは PC にも昔からある仕組みです。
+      Android で変わったのは、DAC が何を単位に照合するかのほうです。</dd>
+  </dl>
+
+  <h2>3. 箱には4つの壊れ方がある</h2>
+
+  <p>この教材の4章は、脆弱性の種類ではなく<b>どの境界が破れたか</b>で分けてあります。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 250" role="img" aria-label="箱の4つの壊れ方と各章の対応">
+      <rect class="wall-fill" x="230" y="60" width="260" height="150" rx="8"/>
+      <rect class="wall" x="230" y="60" width="260" height="150" rx="8"/>
+      <text class="t-b" x="320" y="96">アプリの箱</text>
+      <rect class="card" x="262" y="112" width="196" height="46" rx="6"/>
+      <text class="t-sm mono" x="278" y="140">保存されたデータ</text>
+      <text class="t-sm" x="268" y="186">第1章：中の置き方</text>
+
+      <line class="flow" x1="150" y1="135" x2="228" y2="135"/>
+      <rect class="card" x="20" y="112" width="132" height="46" rx="6"/>
+      <text class="t" x="34" y="132">窓口から入る</text>
+      <text class="t-sm" x="34" y="150">第2章 IPC</text>
+
+      <line class="flow" x1="492" y1="135" x2="570" y2="135"/>
+      <rect class="card" x="568" y="112" width="132" height="46" rx="6"/>
+      <text class="t" x="582" y="132">外に出た通信</text>
+      <text class="t-sm" x="582" y="150">第3章 通信</text>
+
+      <line class="flow dash" x1="360" y1="40" x2="360" y2="58"/>
+      <rect class="card" x="270" y="8" width="180" height="34" rx="6"/>
+      <text class="t" x="286" y="30">箱ごと壊す（第4章）</text>
+    </svg>
+    <figcaption>
+      章の順番は、箱の中 → 箱に開いた口 → 箱の外 → 箱そのもの、と外側に広がっていきます。
+    </figcaption>
+  </figure>
+
+  <table>
+    <tr><th>章</th><th>箱の話でいうと</th><th>実体</th></tr>
+    <tr>
+      <td><b>第1章 プロセス境界</b></td>
+      <td>箱の<b>中の置き方</b>が雑だと、箱が開いたときに困る</td>
+      <td>UID 分離、<code>/data/data</code> の権限、SELinux</td>
+    </tr>
+    <tr>
+      <td><b>第2章 IPC 境界</b></td>
+      <td>箱には<b>窓口</b>がある。作り方を間違えると外から入られる</td>
+      <td>Binder、Intent、<code>exported</code>、permission</td>
+    </tr>
+    <tr>
+      <td><b>第3章 ネットワーク境界</b></td>
+      <td>箱の<b>外に出る通信</b>は、誰でも通れる場所を通る</td>
+      <td>TLS の信頼モデル、トラストストア、NSC</td>
+    </tr>
+    <tr>
+      <td><b>第4章 実行環境境界</b></td>
+      <td><b>箱そのものを壊す人</b>がいる。そこでも守れるのか</td>
+      <td>Android Keystore、鍵の<b>保持</b>と<b>使用</b>の分離</td>
+    </tr>
+  </table>
+
+  <p>この順番には理由があります。
+  第1章で「箱がある」ことを確かめ、第2章と第3章で「箱に開いている口」を見て、
+  最後の第4章では箱が壊された状態を前提にするので、
+  4つの別々の技を覚えるのではなく、ひとつの話の続きとして読めるはずです。</p>
+
+  <hr class="part-break">
+  <p class="part-label">ここからは、この教材の進め方です</p>
+
+  <h2>4. この教材でのあなたの立場</h2>
+
+  <p class="qa-a">出てきた主張が本当かを確かめる人として進みます。</p>
+
+  <p>脆弱性を見つけられること自体の価値は、以前より下がりました。
+  自動解析ツールと AI が、それなりの精度で候補を並べてくれるからです。
+  ただし AI が出してくるのは、あくまで<b>主張</b>であって事実ではありません。</p>
+
+  <ul>
+    <li>「ここが脆弱です」→ 本当に成立するのか</li>
+    <li>「こう直せば安全です」→ その修正は本当に効くのか</li>
+    <li>「暗号化したので安全です」→ <b>何から</b>安全になったのか</li>
+  </ul>
+
+  <div class="callout note">
+    <strong>あなたは検証者</strong><br>
+    攻撃するのは確かめるためであって、破ること自体が目的ではありません。
+    対策を<b>書く</b>のでもなく、出てきた対策が<b>効くかどうかを判定します</b>。
+  </div>
+
+  <p>これは AI に質問するときの構えでもあります。
+  各章には AI に聞くための文が置いてあり、返ってきた説明はその章の手順でそのまま検証できます。
+  章末では自分の言葉で説明を書きます。
+  合っているかどうかを決めるのは、AI ではなく手元のエミュレータです。</p>
+
+  <h2 id="positions">5. どの立場から攻めるのか</h2>
+
+  <p class="qa-a">脆弱性より先に、誰として攻めるのかを決めます。</p>
+
+  <p>4章は「どの境界が破れるか」で並んでいます。ただし章を開いた時点で、
+  どこが破れるかも、使う道具も、成功するかどうかも、こちらが決めてしまっています。
+  実際の診断では順番が逆になり、先に決めるのは<b>相手</b>のほうです。
+  Android の設計を書いた <i>The Android Platform Security Model</i> という文書も、
+  機構の説明より先に、どういう相手をどこまで想定するのかを並べています。</p>
+
+  <p>想定する相手が決まっていないと、あとで「この対策は効いていますか」と聞かれたときに答えようがありません。
+  <b>効くかどうかは、相手によって変わるからです。</b>
+  ひとつ前の節で決めたのは検証者として進むという構えでした。ここで決めるのは、確かめるときに<b>誰の役をやるか</b>です。</p>
+
+  <div class="callout blocked">
+    <strong>肩書ではなく、能力で切ります</strong><br>
+    「端末を奪った人」は1つの立場ではありません。
+    ロック中の端末を拾っただけの人、ロックが解けた端末を触れる人、root を取った人、
+    バックアップのファイルだけを持っている人では、<b>できることがまるで違います</b>。
+    カードは肩書ではなく、<b>その相手が実際に持っている能力</b>で切ってあります。
+  </div>
+
+  <p>新しく用意した道具は1つもありません。各章の Basic ですでに使うものに、名前と前提を付けただけです。
+  カードは3行で固定してあります。3行目の<b>そこに立つには何が要るか</b>を毎回読んでください。
+  <b>攻撃が現実的かどうかは、だいたいこの行で決まります。</b></p>
+
+<div class="pos-grid">
+  <div class="pos-card outside">
+    <h3>APK だけ持っている <span class="pos-side-tag">端末の外</span></h3>
+    <p class="pos-tool">unzip / apktool / grep</p>
+    <dl>
+      <dt>できること</dt>
+      <dd>コードと Manifest と同梱リソースを全部読めます。窓口の名前も、直書きした鍵もここで出ます。</dd>
+      <dt>できないこと</dt>
+      <dd>動いている端末の中の値には、1つも届きません。</dd>
+      <dt>立つには</dt>
+      <dd>配布されている APK を手に入れるだけです。端末には触りません。</dd>
+    </dl>
+  </div>
+  <div class="pos-card outside">
+    <h3>通信路にいる人 <span class="pos-side-tag">端末の外</span></h3>
+    <p class="pos-tool">Burp（同じ Wi-Fi・中間者）</p>
+    <dl>
+      <dt>できること</dt>
+      <dd>端末の外に出ていくパケットを覗けます。条件が揃えば書き換えもできます。</dd>
+      <dt>できないこと</dt>
+      <dd>端末の中に置いてあるだけのものには届きません。</dd>
+      <dt>立つには</dt>
+      <dd>同じ Wi-Fi に入る、経路上の機器を押さえる。端末の中には入っていません。</dd>
+    </dl>
+  </div>
+  <div class="pos-card inside">
+    <h3>開発者の口 <span class="pos-side-tag">端末の中</span></h3>
+    <p class="pos-tool">adb shell / run-as / content query</p>
+    <dl>
+      <dt>できること</dt>
+      <dd>shell ユーザーとして端末を操作できます。<code>run-as</code> でアプリのデータにも入れます。</dd>
+      <dt>できないこと</dt>
+      <dd><code>run-as</code> が効くのは debuggable なアプリだけです。ストアのリリース版では通りません。</dd>
+      <dt>立つには</dt>
+      <dd>ユーザーが開発者オプションと USB デバッグを自分で有効にしている必要があります。</dd>
+    </dl>
+  </div>
+</div>
+
+  <div class="callout note">
+    <strong>いま読むのはこの3枚だけです</strong><br>
+    立場は全部で7つあり、残り4枚は取得済みファイル・攻撃者アプリ・root・Frida を使う層のものです。
+    そちらは <a href="surface-map.html">攻撃面マップ</a> の側に置いてあります。
+    章を通したあと、1つの資産にどの立場から届くのかを数えるときに、7枚まとめて使います。
+  </div>
+
+  <h2>6. 各章は必ず2つをセットで見る</h2>
+
+  <p class="qa-a">防御側があることが、この教材と一般的な「やられアプリ」との違いです。</p>
+
+  <table>
+    <tr><th>攻撃側</th><th>防御側</th></tr>
+    <tr>
+      <td>どうやって漏れるか</td>
+      <td><b>なぜ普段は漏れないのか</b>（OS が裏で何をしているか）</td>
+    </tr>
+  </table>
+
+  <p><code>ps</code>、<code>ls -l</code>、<code>id</code> といった素の道具を使って、
+  守っている当人である OS の仕事を、自分の目で見に行きます。</p>
+
+  <div class="callout blocked">
+    <strong>先に言っておきます：失敗する演習があります</strong><br>
+    <b>わざと成功しない手順</b>が入っていて、そこには「これは OS が守った結果です」と必ず書いてあります。
+    コマンドが弾かれたとき、それはあなたの操作ミスではなく<b>観察対象</b>です。
+  </div>
+
+  <h2>7. 1つの章の進み方</h2>
+
+  <p class="qa-a">全4章が同じ6段でできています。</p>
+
+  <p>どの章でも迷わないように、形は固定してあります。</p>
+
+  <table>
+    <tr><th>段</th><th>やること</th></tr>
+    <tr><td>① この章で触る仕組み</td><td>読む。何を相手にするのかを押さえる（5分）</td></tr>
+    <tr><td>② 判断の分かれ目</td><td>作り手がどこで選んでいるかを見る。まだ答えは出ない</td></tr>
+    <tr><td>③ 間違った判断の結果</td><td>予測してから攻撃する</td></tr>
+    <tr><td>④ なぜ普段は破れないのか</td><td>OS の側に回って観察する</td></tr>
+    <tr><td>⑤ 修正案が効くかを判定する</td><td>効く案と、効いたように見える案を見分ける</td></tr>
+    <tr><td>⑥ その対策はどこまで守るか</td><td>守れない範囲を「失敗」ではなく<b>射程の外</b>として言う</td></tr>
+  </table>
+
+  <p>時間がなければ ①③⑤ だけでも章は閉じます（Basic）。
+  層の分け方は <a href="index.html">トップページ</a>にあります。</p>
+
+  <div class="callout note">
+    <strong>③と④では、打つ前に予測を書きます</strong><br>
+    コマンドを打って結果を眺めるだけだと、「そういうものか」で終わります。
+    <b>先に予測を書く</b>と、外れた瞬間に自分の思い込みが表に出ます。そこが学習の起点です。
+    予測を書かせるだけでは飛ばされるので、この教材では
+    <b>予測を入れるまで解説が出ません</b>。手順ごとに欄が埋め込んであり、操作はページの中で完結します。
+  </div>
+
+  <div class="callout blocked">
+    <strong>外してよい</strong><br>
+    的中率は高ければよいものではありません。外した手順は <a href="progress.html">記録</a> に残り、
+    どこで誤解していたかの記録になります。むしろそこが成果物です。
+  </div>
+
+  <p>⑥まで終わったら、章末に <a href="explain.html">説明課題</a> があります。
+  4〜5問に自分の言葉で答えて、必要な観点が入っているかを自己採点します。
+  抜けている観点には、どの手順に戻ればよいかが出ます。
+  そのあとが <a href="quiz.html">概念テスト</a> と <a href="oracle.html">オラクル演習</a> で、
+  前者には実際によくある誤解が選択肢として仕込んであり、後者は AI が出した診断と修正案を判定する課題です。</p>
+
+  <h2>8. 最初の3問が、この先で使う質問の型です</h2>
+
+  <p class="qa-a">答えの中身と同じくらい、問いの立て方を持ち帰ってほしいと思っています。</p>
+
+  <p>3問はそれぞれ違う型で立ててあり、この教材はこの3つを4章ぶん繰り返します。</p>
+
+  <table>
+    <tr><th>型</th><th>導入での例</th><th>この先どこで使うか</th></tr>
+    <tr>
+      <td><b>比較で立てる</b></td>
+      <td>Q1: PC と何が違うのか</td>
+      <td>③。条件を1つだけ変えて、結果の差だけを見る</td>
+    </tr>
+    <tr>
+      <td><b>守る側を主語にする</b></td>
+      <td>Q2: 誰が止めているのか</td>
+      <td>④。攻撃する側ではなく、止める側に立つ</td>
+    </tr>
+    <tr>
+      <td><b>どの脅威に対してかを問う</b></td>
+      <td>Q3: 何に対して安全とされるのか</td>
+      <td>⑥。守れる範囲と守れない範囲に線を引く</td>
+    </tr>
+  </table>
+
+  <p>「安全ですか」と聞くと答えが出ません。「何から守りますか」と聞くと答えが出ます。
+  この差が、各章の最後で修正案を判定するときにそのまま効いてきます。</p>
+
+  <h2>9. 手を動かす前にひとつだけ約束</h2>
+
+  <div class="callout note">
+    <strong>実施範囲</strong><br>
+    すべてローカルの AVD（または自分で用意した検証端末）の上で、
+    <b>自分がインストールしたアプリに対してのみ</b>実施してください。
+    外部のサービスやアプリには接続しません。
+  </div>
+
+  <p>座学はここまでです。ここから先はすべて、手を動かしながら読みます。</p>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="setup.html">環境構築へ</a>
+    <a class="learn-btn" href="chapter1-process.html">第1章へ（環境がある人）</a>
+  </div>
+
+  <div class="pager">
+    <a href="index.html">← Home</a>
+    <a href="setup.html">環境構築 →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第2章 IPC境界 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>第2章 — IPC境界</h1>
+  <p class="subtitle">箱は閉じている。ただし窓口を開けたら、そこから全部出ていく</p>
+
+  <div class="badges">
+    <span class="badge masvs">MASVS-PLATFORM-1</span>
+    <span class="badge masvs">MASVS-AUTH-1</span>
+    <span class="badge">Basic 30分</span>
+    <span class="badge">Standard 1〜2時間</span>
+    <span class="badge">Deep 任意</span>
+  </div>
+
+  <div class="callout note">
+    <strong>第1章とのつながり</strong><br>
+    第1章で「他アプリからは読めない」ことを確かめた <code>user_session</code> の中身が、
+    この章では他アプリから普通に読めてしまいます。<b>ファイルの権限は何ひとつ変わっていません</b>。
+    変わったのは、アプリが自分で窓口を開けたことだけです。
+  </div>
+
+  <!-- ===================== ① 座学 ===================== -->
+  <div class="primer">
+    <h2>この章で触る仕組み</h2>
+    <p class="primer-meta">読むだけ・7分。第1章で見た「箱」に、今度は窓口を開ける話です。</p>
+    <p>アプリは他のアプリと連携して動きます。写真を選び、共有ボタンで別のアプリに渡す。
+      そのために Android が用意しているのがこの章の仕組みで、
+      窓口を開けるのは普通の使い方です。決めるのは<b>誰に開けるか</b>のほうです。</p>
+    <figure class="fig">
+      <svg viewBox="0 0 720 270" role="img" aria-label="外からの呼び出しが Binder とシステム側の判定を通ってからアプリのコードに届くことを示した図">
+        <rect class="card" x="16" y="60" width="140" height="80" rx="6"/>
+        <text class="t-b" x="30" y="90">呼び出し元</text>
+        <text class="t-sm" x="30" y="112">別のアプリ / adb</text>
+
+        <rect class="plate" x="188" y="60" width="130" height="80" rx="6"/>
+        <text class="t-b" x="202" y="90">Binder</text>
+        <text class="t-sm" x="202" y="112">uid を添えて渡す</text>
+
+        <rect class="plate" x="350" y="60" width="180" height="80" rx="6"/>
+        <text class="t-b" x="364" y="90">システム側の判定</text>
+        <text class="t-sm" x="364" y="112">ActivityManager ほか</text>
+
+        <rect class="wall" x="562" y="60" width="142" height="80" rx="6"/>
+        <text class="t-b" x="576" y="90">アプリのコード</text>
+        <text class="t-sm" x="576" y="112">ここで初めて動く</text>
+
+        <line class="flow" x1="156" y1="100" x2="182" y2="100"/>
+        <polygon points="186,100 176,95 176,105" fill="var(--text-muted)"/>
+        <line class="flow" x1="318" y1="100" x2="344" y2="100"/>
+        <polygon points="348,100 338,95 338,105" fill="var(--text-muted)"/>
+        <line class="pass" x1="530" y1="100" x2="556" y2="100"/>
+        <polygon points="560,100 550,95 550,105" fill="var(--success)"/>
+
+        <line class="flow dash" x1="440" y1="180" x2="440" y2="144"/>
+        <polygon points="440,140 435,150 445,150" fill="var(--text-muted)"/>
+        <rect class="card" x="326" y="182" width="228" height="62" rx="6"/>
+        <text class="t-sm" x="340" y="206">判定が見るのはこの2行だけ</text>
+        <text class="t-sm mono" x="340" y="228">exported / permission</text>
+
+        <text class="t-sm" x="16" y="206">アプリのコードは、呼ばれたことすら</text>
+        <text class="t-sm" x="16" y="226">知らないまま弾かれることがあります。</text>
+      </svg>
+      <figcaption>
+        外からの呼び出しは、アプリのコードに届く前にシステム側で判定されます。
+        判定の材料は Manifest に書いた2行で、アプリのコードではありません。
+      </figcaption>
+    </figure>
+
+    <div class="qa">
+      <p class="qa-q">Q1. アプリ同士は互いのメモリを触れません。ではなぜ、共有ボタンで写真を別のアプリに渡せるのですか。</p>
+
+      <p class="qa-a">渡しているのではなく、<b>Binder</b> というカーネルのドライバ越しに頼んでいるからです。</p>
+
+      <p>頼み方の型が2つあります。相手のデータを取りに行く窓口が <b>ContentProvider</b> で、
+      連絡先やカレンダーを読めるのもこれです。Manifest の <code>&lt;provider&gt;</code> に書いた
+      <code>authorities</code> が名前になり、<code>content://&lt;authority&gt;/&lt;path&gt;</code> という URI で呼ばれます。</p>
+
+      <p>もう1つが <b>Intent</b> で、「これをしてくれ」というメッセージを投げる形です。
+      受け口が <b>BroadcastReceiver</b>、宛先が <code>&lt;intent-filter&gt;</code> に書いた action 名になります。
+      Binder の実体は <code>/dev/binder</code> というデバイスファイルです。</p>
+    </div>
+
+    <div class="qa">
+      <p class="qa-q">Q2. 窓口を開けたとして、誰が来ますか。</p>
+
+      <p class="qa-a">指定しなければ、<b>その端末に入っている全員</b>です。</p>
+
+      <p>それを決める1行が <b><code>android:exported</code></b> で、
+      Activity にも Provider にも Receiver にも、同じ書き方で付きます。</p>
+
+      <p class="who">ここで押さえておきたいのは、この1行が <b>APK の中の Manifest に書いてある</b>ことです。
+      攻撃者も同じものを読めます。窓口の名前を推測しにくいものに変えても、隠したことにはなりません。</p>
+    </div>
+
+    <div class="qa">
+      <p class="qa-q">Q3. 開けたまま、相手を選べますか。</p>
+
+      <p class="qa-a">選べます。<b>permission</b> で「この資格を持つ相手だけ」と要求します。</p>
+
+      <p>守る側が <code>&lt;permission&gt;</code> で名前と <b><code>protectionLevel</code></b> を宣言し、
+      呼ぶ側が <code>&lt;uses-permission&gt;</code> で要求する、という形です。</p>
+
+      <p>強さが2段階あります。<code>normal</code> は呼ぶ側が自分の Manifest に1行書けば取れてしまいますが、
+      <code>signature</code> は<b>宣言した側と同じ証明書で署名されたアプリにしか与えられません</b>。
+      この差がこの章の分かれ目になります。</p>
+
+      <p class="who">この教材の攻撃者アプリは、その1行を<b>実際に書いています</b>。
+      書いたうえで付与されないことを P4b で確かめられます。
+      「宣言していないから弾かれた」のと「宣言したが署名が違うので付与されなかった」のは別で、
+      後者でなければ <code>signature</code> が効いた証拠になりません。
+      2つのモジュールは別々の鍵で署名してあり、
+      <code>tools/verify/verify-signatures.sh</code> がそれを自動で確かめます。</p>
+
+      <p>もう1つ、Intent には<b>送り主を証明する情報が自動では付きません</b>。
+      誰から来たのかを確かめるかどうかは、受け取る側が決めることになります。</p>
+    </div>
+    <p>この章で触る4つは、中のコードではなく Manifest の書き方だけが違います。
+    第1章で見たファイルの権限は、4つとも同じままです。</p>
+
+    <table class="matrix">
+      <tr><th>窓口</th><th>Manifest の書き方</th><th>外から呼ぶと</th><th>プローブ</th></tr>
+      <tr><td><code>SessionProvider</code></td><td><code>exported=true</code> / permission なし</td>
+          <td class="ng">中身が出てくる</td><td>P3</td></tr>
+      <tr><td><code>AdminActivity</code></td><td><code>exported=true</code></td>
+          <td class="ng">ログイン画面を通らずに開く</td><td>P5</td></tr>
+      <tr><td><code>RoleReceiver</code></td><td><code>exported=true</code> / intent-filter あり</td>
+          <td class="ng">送り主を確かめずに信じる</td><td>P7</td></tr>
+      <tr><td><code>ProtectedSessionProvider</code></td><td><code>permission</code> あり（signature）</td>
+          <td class="ok">手前で弾かれる</td><td>P4</td></tr>
+    </table>
+
+    <p class="learn-note">一番上と一番下は、中身のコードが同じクラスです。
+    違うのは Manifest の1行だけで、結果が逆になります。</p>
+    <p class="who"><b>判定しているのは誰か：</b>アプリのコードではなく
+      <b>ActivityManager / ContentResolver</b>（システム側）です。
+      見ているのは Manifest の <code>exported</code> と <code>permission</code> で、
+      呼び出しがプロセスを跨ぐ<b>前に</b>弾かれます。</p>
+
+    <details class="hint terms">
+      <summary>用語だけをもう一度並べる（問答で出たものの一覧。あとで引く用）</summary>
+    <dl>
+      <dt>IPC（プロセス間通信）と Binder</dt>
+      <dd>アプリは別々のプロセスで動くので、相手のメモリを直接は触れません。
+        やり取りは Binder というカーネルのドライバを経由します。</dd>
+
+      <dt>ContentProvider</dt>
+      <dd>他アプリに自分のデータを渡す窓口で、連絡先やカレンダーを読めるのもこれです。
+        Manifest の <code>&lt;provider&gt;</code> に書いた <code>authorities</code> が名前になり、
+        <code>content://&lt;authority&gt;/&lt;path&gt;</code> の URI で呼ばれます。</dd>
+
+      <dt>Intent と BroadcastReceiver</dt>
+      <dd>Intent は「これをしてくれ」というメッセージ、Receiver はその受け口です。
+        Manifest の <code>&lt;intent-filter&gt;</code> に書いた action 名が宛先です。
+        届いた Intent に、送り主を証明する情報は自動では付きません。</dd>
+
+      <dt>android:exported</dt>
+      <dd>他アプリから呼べるかどうかの指定です。
+        Activity / Provider / Receiver のどれにも、同じ1行で付きます。</dd>
+
+      <dt>permission と protectionLevel</dt>
+      <dd>呼ぶ側に資格を要求する仕組みです。守る側が <code>&lt;permission&gt;</code> で名前と
+        <code>protectionLevel</code>（<code>normal</code> か <code>signature</code>）を宣言し、
+        呼ぶ側は <code>&lt;uses-permission&gt;</code> で要求します。</dd>
+    </dl>
+    </details>
+  </div>
+
+  <!-- ===================== ② 判断の分かれ目 ===================== -->
+  <div class="fork">
+    <h2>ここに判断の分かれ目がある</h2>
+    <p>窓口を1つ作るたびに、作り手は毎回この4つを決めています。</p>
+    <ul>
+      <li><code>exported</code> を true にするか false にするか</li>
+      <li>permission を付けるか、付けないか</li>
+      <li>付けるならどの protectionLevel か（<code>normal</code> / <code>signature</code>）</li>
+      <li>受け取った Intent の中身を信じるか、送り主を確かめるか</li>
+    </ul>
+    <p class="fork-tail">この4つの組み合わせが、そのまま攻撃の成否になります。
+      この章では <b>コードを一切変えずに Manifest の 1行だけ</b> を動かして、結果がどう変わるかを見ていきます。</p>
+
+    <details class="hint askai">
+      <summary>いま答えが知りたい人へ（AI に聞くための文）</summary>
+      <p>ここで正解を先に書いてしまうと、このあとの手順が答え合わせではなく、
+      決まった結果をなぞる作業になります。だからこのページには書きません。
+      ただ、分からないまま進むのが気持ち悪いのは当然なので、<b>聞き方のほうを渡します。</b>
+      普段使っている AI に貼ってください。返ってきた説明は、この章の手順でそのまま検証できます。
+      <b>合っているかどうかを決めるのは、AI ではなくあなたの手元のエミュレータです。</b></p>
+<pre><code>Android のセキュリティを学んでいます。手を動かして確かめる前に、選択肢の見取り図がほしいです。
+
+【状況】
+アプリが ContentProvider と BroadcastReceiver を持っています。作り手が決めるのは次の4つです。
+1. android:exported を true にするか false にするか
+2. permission を付けるか、付けないか
+3. 付けるなら protectionLevel を normal にするか signature にするか
+4. 受け取った Intent の中身をそのまま信じるか、送り主を確かめるか
+【聞きたいこと】
+それぞれについて、次の相手から守れるかどうかを分けて書いてください。
+- 同じ端末に入っている別のアプリ（権限なし）
+- adb shell（開発者オプションが有効な端末）
+- root を取った人、または端末を物理的に奪った人
+- 動いているアプリのプロセスに入れる人
+
+【条件】
+- 断定する箇所には、Android エミュレータの手元で確かめる方法
+  （打つコマンド、または見るべき出力）を必ず添えてください。
+- 「安全です」と書くときは、何から安全なのかを必ず書いてください。
+- 一般論で終わらせず、パス名・API 名・エラー名などの具体的な名前を出してください。</code></pre>
+      <button class="learn-btn" data-copy>この文をコピー</button>
+    </details>
+
+  </div>
+
+  <!-- ============================ BASIC ============================ -->
+  <section class="layer basic">
+    <h2><span class="layer-tag">Basic</span>窓口から入ってみる</h2>
+    <p class="layer-meta">所要 30分 / 初学者向け・必修。</p>
+
+    <h3>1. 画面を名指しで開く</h3>
+    <p>このアプリには <code>[Basic] 管理者コンソール</code> という画面があります。
+    アプリのメニューから開くのが本来の入り方ですが、<b>端末の外から名指しで起動できます。</b></p>
+<pre><code>adb shell am start -n com.example.insecureappplatform/.AdminActivity</code></pre>
+    <p>管理者コンソールが開きます。<b>アプリの画面をひとつも通っていません。</b>
+    誰が呼んだのかは確認されず、呼ばれたとおりに開きました。</p>
+
+    <h3>2. 窓口からデータを持ち出す</h3>
+    <p>第1章で保存した認証情報を、アプリの画面を使わずに取り出します。</p>
+<pre><code>adb shell content query --uri content://com.example.insecureappplatform.session/creds</code></pre>
+<pre class="out"><code>Row: 0 key=username, value=alice
+Row: 1 key=password, value=P@ssw0rd123</code></pre>
+
+    <p class="layer-meta">出てくる行は <code>user_session</code> に保存されている内容そのものです。
+    第1章をまだやっていなければ空になります。手順4 の P7 を実行したあとは <code>role</code> の行が増えます。</p>
+
+    <div class="callout vuln">
+      <strong>確認できたこと</strong><br>
+      第1章では <code>Permission denied</code> で止められた同じ <code>P@ssw0rd123</code> が、
+      ContentProvider 経由なら誰でも読めてしまいます。ファイルの権限は変えていません。
+      <b>アプリが自分で外に向けた口を開けた</b>だけです。
+    </div>
+
+    <p class="stance">立場は第1章と同じ <b>開発者の口（<code>adb shell</code>）</b> のままです。ただし第1章と違って <code>run-as</code> が要りませんでした。<a href="intro-sandbox.html#positions">攻撃者の立場</a> のカードと見比べてください。</p>
+
+    <p><b>Basic はここまで。</b></p>
+  </section>
+
+  <!-- ============================ STANDARD ============================ -->
+  <section class="layer standard">
+    <h2><span class="layer-tag">Standard</span>何が窓口を開け、何が閉めているのか</h2>
+    <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
+
+    <div class="learn-step" data-step="ch2-s3"></div>
+    <div class="learn-step" data-step="ch2-p3"></div>
+    <div class="learn-step" data-step="ch2-p4"></div>
+    <div class="learn-step" data-step="ch2-p7"></div>
+
+    <h3>3. 開かない窓口もある</h3>
+<pre><code>adb shell am start -n com.example.insecureappplatform/.InsecureStorageActivity</code></pre>
+<pre class="out"><code>Permission Denial: starting Intent { cmp=com.example.insecureappplatform/.InsecureStorageActivity }
+from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
+
+    <div class="callout blocked">
+      <strong>これは OS が止めた</strong><br>
+      同じ <code>am start</code>、同じアプリなのに、片方は開いて片方は止まります。
+      違いは <code>AndroidManifest.xml</code> の <code>android:exported</code> の値だけです。
+      止めた側も <code>not exported from uid 10175</code> と、誰のものかを見て弾いたことを言っています。
+      判定しているのはアプリのコードではなく、<b>ActivityManager（システム側）</b>です。
+    </div>
+
+    <h3>4. 攻撃者アプリで一通り試す</h3>
+    <p>Attacker アプリを起動して P3〜P7 を順に押します。</p>
+    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
+<table class="matrix">
+      <tr><th>プローブ</th><th>やること</th><th>結果</th><th>効いているもの</th></tr>
+      <tr><td>P3</td><td>無防備な Provider を読む</td><td class="blank">?</td><td>なし</td></tr>
+      <tr><td>P4</td><td>permission 付き Provider を読む</td><td class="blank">?</td><td>signature permission</td></tr>
+      <tr><td>P4b</td><td>その permission が自分に付与されたか調べる</td><td class="blank">?</td><td>署名の照合</td></tr>
+      <tr><td>P5</td><td>管理画面を起動する</td><td class="blank">?</td><td>なし（exported=true）</td></tr>
+      <tr><td>P6</td><td>非公開画面を起動する</td><td class="blank">?</td><td>exported=false</td></tr>
+      <tr><td>P7</td><td>Broadcast で role を書き換える</td><td class="blank">?</td><td>なし（送信元を確認していない）</td></tr>
+      <tr><td>P7b</td><td>permission 付き Receiver に同じ Intent を投げる</td><td class="blank">?</td><td>signature permission</td></tr>
+    </table>
+<details class="hint"><summary>答え合わせ</summary>
+<table class="matrix">
+      <tr><th>プローブ</th><th>やること</th><th>結果</th><th>効いているもの</th></tr>
+      <tr><td>P3</td><td>無防備な Provider を読む</td><td class="ok">読める</td><td>なし</td></tr>
+      <tr><td>P4</td><td>permission 付き Provider を読む</td><td class="ng">拒否</td><td>signature permission</td></tr>
+      <tr><td>P4b</td><td>その permission が自分に付与されたか調べる</td><td class="ng">要求済みだが未付与</td><td>署名の照合（SIGNATURE_NO_MATCH）</td></tr>
+      <tr><td>P5</td><td>管理画面を起動する</td><td class="ok">開く</td><td>なし（exported=true）</td></tr>
+      <tr><td>P6</td><td>非公開画面を起動する</td><td class="ng">拒否</td><td>exported=false</td></tr>
+      <tr><td>P7</td><td>Broadcast で role を書き換える</td><td class="ok">通る</td><td>なし（送信元を確認していない）</td></tr>
+      <tr><td>P7b</td><td>permission 付き Receiver に同じ Intent を投げる</td><td class="ng">配送されない</td><td>signature permission</td></tr>
+    </table>
+</details>
+
+    <p>P7 のあと、管理画面をもう一度開いて <code>role</code> を見ます。
+    <code>guest</code> だったものが <code>admin</code> になっています。</p>
+<pre><code>adb shell am start -n com.example.insecureappplatform/.AdminActivity</code></pre>
+
+    <div class="callout vuln">
+      <strong>Intent は「外部からの入力」</strong><br>
+      <code>RoleReceiver</code> は <code>intent.getStringExtra("role")</code> をそのまま保存しています。
+      送ってきたのが自分のアプリなのか、まったく別のアプリなのかを確認していません。
+      Web でいえば、リクエストパラメータをそのまま権限として信じているのと同じです。
+    </div>
+
+    <h3>5. Manifest 側で答え合わせをする</h3>
+<pre><code>grep -A3 -E "provider|receiver|AdminActivity" \
+  app/src/main/AndroidManifest.xml</code></pre>
+    <p>P3 と P4 の Provider は <b>中身のクラスが同じ</b>（<code>ProtectedSessionProvider</code> は
+    <code>SessionProvider</code> をそのまま継承しているだけです）。違いは Manifest の1行だけです。</p>
+<pre class="out"><code>&lt;provider android:name=".SessionProvider"
+    android:authorities="...session"
+    android:exported="true" /&gt;
+
+&lt;provider android:name=".ProtectedSessionProvider"
+    android:authorities="...session.protected"
+    android:exported="true"
+    android:permission="com.example.insecureappplatform.permission.READ_SESSION" /&gt;</code></pre>
+
+    <div class="callout note">
+      <strong>攻撃を止めたのはコードではない</strong><br>
+      P4 が止まったのは Java/Kotlin のコードのおかげではなく、
+      Manifest に書いた1行と、それを見て <b>ContentResolver がプロセスをまたぐ前に</b>
+      チェックしているおかげです。防御はアプリの中ではなく、境界の上にあります。
+    </div>
+
+    <h3>6. 差分実験：窓口の締め方を1段ずつ変える</h3>
+    <p><code>app/src/main/AndroidManifest.xml</code> を編集して再ビルド・再インストールし、
+    毎回 P3 を押します。攻撃側は一切変えません。</p>
+<pre><code>./gradlew :app:installDebug</code></pre>
+    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
+<table class="matrix">
+      <tr><th>Manifest の書き方</th><th>P3（他アプリから読む）</th><th>adb content query</th></tr>
+      <tr><td><code>exported="true"</code>（現状）</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td><code>exported="true"</code> + <code>permission</code>(normal)</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td><code>exported="true"</code> + <code>permission</code>(signature)</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td><code>exported="false"</code></td><td class="blank">?</td><td class="blank">?</td></tr>
+    </table>
+<details class="hint"><summary>答え合わせ</summary>
+<table class="matrix">
+      <tr><th>Manifest の書き方</th><th>P3（他アプリから読む）</th><th>adb content query</th></tr>
+      <tr><td><code>exported="true"</code>（現状）</td><td class="ng">読める</td><td class="ng">読める</td></tr>
+      <tr><td><code>exported="true"</code> + <code>permission</code>(normal)</td><td class="ng">攻撃側が宣言すれば読める</td><td class="ng">読める</td></tr>
+      <tr><td><code>exported="true"</code> + <code>permission</code>(signature)</td><td class="ok">読めない</td><td class="ok">読めない</td></tr>
+      <tr><td><code>exported="false"</code></td><td class="ok">読めない</td><td class="ok">読めない</td></tr>
+    </table>
+</details>
+
+    <details class="hint">
+      <summary>ヒント：normal と signature の違いを実験で出すには</summary>
+      <p>攻撃者アプリの Manifest には、すでに
+      <code>&lt;uses-permission android:name="com.example.insecureappplatform.permission.READ_SESSION" /&gt;</code>
+      が書いてあります。P4b を押すと「要求しているが付与されていない」と出ます。<br>
+      ここで被害者側の <code>protectionLevel</code> を <code>normal</code> に変えて再ビルド・再インストールすると、
+      <b>攻撃側を1文字も変えていないのに</b> P4 が通るようになります。
+      <code>signature</code> に戻すとまた止まります。止めているのは<b>署名の一致・不一致</b>です。
+      「permission を付けたから安全」ではなく、<b>どの protectionLevel か</b>で結論が変わります。</p>
+      <p>もう1つの差分実験として、両モジュールを<b>同じ鍵で署名する</b>と、
+      <code>signature</code> のままでも P4 が通ります。
+      <code>signature</code> が守っているのは「他人かどうか」であって「permission を書いたかどうか」ではない、
+      という当たり前のことが、ここで観測できます。</p>
+    </details>
+
+    <h3>7. 直す</h3>
+    <ul>
+      <li><code>SessionProvider</code> を <code>exported="false"</code> にする（そもそも公開しない）</li>
+      <li>公開が必要なら <code>signature</code> permission を付ける</li>
+      <li><code>AdminActivity</code> を <code>exported="false"</code> にし、画面側でもセッションを確認する</li>
+      <li><code>RoleReceiver</code> は、効く順に
+        (1) 外部公開が要らないなら <code>exported="false"</code>、
+        (2) 公開が要るなら receiver 側に <code>android:permission</code> を要求する
+        （自社アプリ間なら <code>signature</code>）、
+        (3) extras は外部入力なので、権限や認証状態としてそのまま信用しない</li>
+    </ul>
+    <div class="callout blocked">
+      <strong>ここで <code>Binder.getCallingUid()</code> は使えません</strong><br>
+      「受け取った側で呼び出し元の UID を見ればよい」という案がよく出ます。
+      ContentProvider や AIDL のように Binder の呼び出しの中で走るコードなら、それは正しいやり方です。
+      ですが <code>BroadcastReceiver.onReceive()</code> は<b>送信側の Binder トランザクションの中では走っていません</b>。
+      ここで <code>Binder.getCallingUid()</code> を呼ぶと、返るのは<b>自分のプロセスの UID</b> であって、
+      ブロードキャストを投げてきた相手の UID ではありません。
+      <b>通ってしまうのに、防げたように見える</b>のがこの案の危ないところです。<br><br>
+      送信元を記録したい場合、API 34 以降なら
+      <code>getSentFromUid()</code> / <code>getSentFromPackage()</code> があります。
+      ただしそれ未満の端末では使えず、システムが送信元情報を持たない経路では意味のある値になりません。
+      <b>到達そのものを止めるのは、上の (1) か (2) の側です。</b>
+      送信元の情報は、止めたあとの記録や二重化として足すものです。
+    </div>
+
+    <p>実際に守った版を並べてあります。<code>ProtectedRoleReceiver</code> は
+    <code>RoleReceiver</code> と同じことをしますが、Manifest で signature permission を要求しています。
+    <b>P7b</b> が、同じ Intent をそちらへ投げるプローブです。</p>
+
+    <div class="learn-step" data-step="ch2-p7b"></div>
+
+    <p>塞いだつもりで塞げていない、というのがこの章で一番起きやすい失敗です。
+    直したら P3〜P7b をもう一度全部押して、結果がどう変わったかまで見てください。</p>
+
+    <p><b>Standard はここまで。</b>「誰がどこでチェックしているのか」を言えれば到達です。</p>
+  </section>
+
+  <!-- ============================ DEEP ============================ -->
+  <section class="layer deep">
+    <h2><span class="layer-tag">Deep</span>窓口の下を覗く</h2>
+    <p class="layer-meta">任意。</p>
+
+    <h3>8. 公開されている入口を全部数える</h3>
+<pre><code>adb shell dumpsys package com.example.insecureappplatform | grep -B2 -A6 "Activity Resolver"</code></pre>
+    <p>実機のアプリを調べるときは、まずここで「外から触れる面」を数えるところから始まります。
+    面が多いほど、攻撃対象は広くなります。</p>
+
+    <h3>9. アプリ同士の会話はどこを通っているのか</h3>
+<pre><code>adb shell ls -l /dev/binder</code></pre>
+<pre class="out"><code>crw-rw-rw- 1 root root 10, 50 2026-09-04 14:20 /dev/binder</code></pre>
+    <p>Intent も ContentProvider も、最終的にはこの<b>カーネルのドライバ</b>を通ってプロセス間を渡っています。
+    権限チェックが「アプリの中」ではなく「境界の上」にあると言えるのは、
+    実際に別プロセス・別特権のコード（system_server）が間に立っているからです。</p>
+
+    <div class="callout note">
+      <strong>この先（本プラットフォームの拡張余地）</strong><br>
+      Binder はカーネルドライバなので、その実装自体が攻撃対象になり得ます。
+      アプリ層の脆弱性からカーネル層の脆弱性へ話が続くのはこの地点です。本章では扱いません。
+    </div>
+  </section>
+
+  <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
+  <div class="verdict">
+    <h2>対策は効いたか。どこまで守るか</h2>
+    <p>この章の窓口に対しては、次のような修正案がよく出てきます。
+    <b>どれが本当に効くのかを判定するのは、あなたです。</b>
+    攻撃側（P3〜P7）は一切変えずに、Manifest だけを動かして確かめてください。</p>
+    <table class="matrix">
+      <tr><th>出てきた修正案</th><th>効くか</th><th>効かないなら、なぜ</th></tr>
+      <tr><td>Provider の URI を推測しにくい名前に変える</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td><code>exported="true"</code> のまま permission (normal) を付ける</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td><code>exported="true"</code> + permission (signature)</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td><code>exported="false"</code> にする</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>Receiver 側で <code>intent.getStringExtra</code> の値を検証する</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>Receiver 側で <code>Binder.getCallingUid()</code> を見て送信元を確認する</td><td class="blank">?</td><td class="blank">?</td></tr>
+    </table>
+    <details class="hint">
+      <summary>判定</summary>
+      <p>1つ目は効きません。URI は APK の Manifest に書いてあり、攻撃者はそれを読めます。
+      <b>隠すことは守ることではありません。</b></p>
+      <p>2つ目も効きません。<code>normal</code> は攻撃側が自分の Manifest に
+      1行書けば取れてしまいます。止まったように見えて、止まっていません。
+      「permission を付けました」という報告を受け取ったら、まず protectionLevel を聞いてください。</p>
+      <p>3つ目と4つ目は効きます。ただし射程が違います。<code>signature</code> は
+      「同じ署名鍵の自社アプリからは使わせる」、<code>exported="false"</code> は
+      「誰にも使わせない」という線の引き方です。<b>連携が必要かどうかで、正解が変わります。</b></p>
+      <p>5つ目は的を外しています。値が正しいかではなく
+      <b>そもそも誰でも投げられる</b>点が問題です。
+      <code>role</code> に <code>admin</code> 以外を弾いても、攻撃者は <code>admin</code> を送ってきます。
+      値の検証は、到達を絞ったあとの二重化としては意味がありますが、単独では防御になりません。</p>
+      <p>6つ目は<b>いちばん危ない誤答</b>です。ブロードキャストの受信処理では、
+      <code>Binder.getCallingUid()</code> は送信元の UID を返しません（Standard 手順7 の囲みを参照）。
+      「送信元を確認している」ように見えるコードが書けてしまい、実際には誰でも通ります。
+      止めるのは <code>exported</code> か receiver の <code>permission</code> の側です。</p>
+    </details>
+    <p class="fork-tail">AI に「この Provider を直して」と聞くと、1つ目や2つ目が返ってくることがあります。
+    <b>実験でそれを棄却できるようになるのが、この章の到達点です。</b></p>
+  </div>
+
+  <h2>章末：手を動かした結果を言葉にする</h2>
+  <p>ここまでで観察は終わりました。ただし、観察しただけでは理解になりません。
+  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書いてください。書けなければ、まだ分かっていません。</p>
+<p><a class="learn-btn" href="explain.html?ch=ch2">説明を書く</a></p>
+
+  <h3>理解を確認する</h3>
+  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
+<p><a class="learn-btn" href="quiz.html?ch=ch2">テストを受ける</a></p>
+
+  <details class="hint">
+    <summary>説明を書き終えてから開く：到達点の目安</summary>
+    <ul>
+    <li>プロセス境界が守られていても、アプリが窓口を開ければデータは出ていく</li>
+    <li><code>exported</code> と <code>permission</code> を判定しているのはアプリではなくシステム側</li>
+    <li><code>protectionLevel</code> が normal か signature かで、同じ「permission あり」でも結論が変わる</li>
+    <li>Intent は外部入力であり、中身をそのまま権限や認証状態として信用できない</li>
+    <li>ブロードキャストでは送信元の UID を受信側で確かめられない。止めるのは <code>exported</code> と <code>permission</code> の側</li>
+  </ul>
+  </details>
+
+  <div class="pager">
+    <a href="chapter1-process.html">← 第1章</a>
+    <a href="chapter3-network.html">第3章 ネットワーク境界 →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

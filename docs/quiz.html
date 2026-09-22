@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概念テスト | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922b">
+<script src="nav.js?v=20260922b" defer></script>
+<script src="ui.js?v=20260922b" defer></script>
+<script src="learn.js?v=20260922b" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>概念テスト</h1>
+  <p class="subtitle">手を動かした内容が理解になっているかを見る</p>
+
+  <p>章を選んで受ける。全章まとめて受けたい場合は「全章」を選ぶ。
+  学習前に一度受けておくと、あとで事前と事後の差が出る。</p>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="quiz.html?ch=all">全章（15問）</a>
+    <a class="learn-btn" href="quiz.html?ch=ch1">第1章</a>
+    <a class="learn-btn" href="quiz.html?ch=ch2">第2章</a>
+    <a class="learn-btn" href="quiz.html?ch=ch3">第3章</a>
+    <a class="learn-btn" href="quiz.html?ch=ch4">第4章</a>
+  </div>
+
+  <div class="learn-panel" data-quiz data-chapter="all"></div>
+
+  <script>
+    // ?ch= で範囲を切り替える
+    var ch = new URLSearchParams(location.search).get("ch");
+    if (ch) document.querySelector("[data-quiz]").dataset.chapter = ch;
+  </script>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

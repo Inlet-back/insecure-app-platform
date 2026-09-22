@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 (API 31) 以降のバックアップ / 端末間転送の対象を決める。
+  AndroidManifest の android:dataExtractionRules から参照している。
+
+  backup_rules.xml と同じ理由で、Keystore の鍵に紐付いたファイルを除外する。
+  cloud-backup と device-transfer は別々に書く必要がある。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="user_session_secure.xml" />
+        <exclude domain="sharedpref" path="fix_d.xml" />
+        <exclude domain="sharedpref" path="tee_demo.xml" />
+        <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_file_pref__.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="user_session_secure.xml" />
+        <exclude domain="sharedpref" path="fix_d.xml" />
+        <exclude domain="sharedpref" path="tee_demo.xml" />
+        <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_file_pref__.xml" />
+    </device-transfer>
+</data-extraction-rules>
