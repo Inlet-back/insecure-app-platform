@@ -19,28 +19,20 @@ Android の防御境界を、手を動かして確かめる教材です。
 - 通信先は**エミュレータから見たホストのループバック（`10.0.2.2`）だけ**です。外部のサービスへは接続しません
 - 攻撃の練習は、自分の手元のエミュレータの中だけで行ってください
 
-## 取り方
+## 落とす
 
-### 1. 配布物（推奨）
+3つクリックしてください。
 
-[Releases](https://github.com/Inlet-back/insecure-app-platform/releases/latest) から3つ落とします。
+- [ソース一式（.zip）](https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/InsecureAppPlatform-src.zip) — 第3章で書き換えて再ビルドします。署名鍵も入っています
+- [被害者アプリ（.apk）](https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/app-debug.apk)
+- [攻撃者アプリ（.apk）](https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/attacker-debug.apk)
 
-| ファイル | 中身 |
-|---|---|
-| `InsecureAppPlatform-src.zip` | ソース一式 + 教材用の署名鍵（`keys/`） |
-| `app-debug.apk` | 被害者アプリ |
-| `attacker-debug.apk` | 攻撃者アプリ |
+落としたら[環境構築](https://inlet-back.github.io/insecure-app-platform/setup.html)を上から順に貼っていけば、実験できる状態になります。
+ダウンロードもコマンドで済ませたい場合は、[手順1](https://inlet-back.github.io/insecure-app-platform/setup.html#s1)にコマンドがあります。
 
-コマンドは[環境構築の手順1](https://inlet-back.github.io/insecure-app-platform/setup.html#s1)にあります。
-
-GitHub が自動で付ける **Source code (zip)** ではなく、上の3つを落としてください。
-自動生成の方には署名鍵（`keys/`）が入っていません。
-
-### 2. `git clone`
-
-第3章の差分実験で使う**署名鍵が付いてきません**。配った APK を上書きインストールできず、
-`INSTALL_FAILED_UPDATE_INCOMPATIBLE` で止まります。両方のアプリを消してから入れ直せば進めます。
-特に理由がなければ、配布物の ZIP を使ってください。
+GitHub が自動で付ける **Source code (zip)** と `git clone` は使わないでください。
+どちらにも署名鍵が入っておらず、配った APK を上書きインストールできません
+（`INSTALL_FAILED_UPDATE_INCOMPATIBLE` で止まります）。
 
 ## 中身
 
