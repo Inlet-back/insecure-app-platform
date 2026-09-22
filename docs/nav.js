@@ -16,6 +16,7 @@
     { href: "surface-map.html", label: "攻撃面マップ" },
     { href: "closing.html", label: "終章" },
     { href: "progress.html", label: "記録" },
+    { href: "https://github.com/Inlet-back/insecure-app-platform", label: "リポジトリ" },
   ];
 
   const here = location.pathname.split("/").pop() || "index.html";
@@ -24,6 +25,8 @@
     const a = document.createElement("a");
     a.href = page.href;
     a.textContent = page.label;
+    // 外部リンク（リポジトリ）は別タブ。読んでいる途中で教材から出ていかないようにする
+    if (/^https?:/.test(page.href)) { a.target = "_blank"; a.rel = "noopener"; }
     if (isBrand) a.className = "brand";
     // 「今いるページ」に印を付ける。色は CSS 側が付ける
     else if (page.href === here) a.setAttribute("aria-current", "page");
