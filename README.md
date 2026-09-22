@@ -49,3 +49,8 @@ GitHub が自動で付ける **Source code (zip)** と `git clone` は使わな�
 
 JDK 17、Android SDK（platform-tools / emulator / system image android-33）、Python 3。
 ディスクは 12GB 以上の空きが要ります。詳しくは[環境構築](https://inlet-back.github.io/insecure-app-platform/setup.html)。
+
+## ライセンス
+
+[MIT](LICENSE)。教材として自由に使い、改変し、配り直せます。
+ただし同梱の署名鍵と証明書・秘密鍵は使い捨ての教材用です。この教材のループバック以外には使わないでください。
