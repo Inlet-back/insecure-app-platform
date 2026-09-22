@@ -76,11 +76,11 @@ brew install --cask android-commandlinetools</code></pre>
 
 <pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 export ANDROID_HOME=$HOME/android-sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator
+export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator
 
 sdkmanager --sdk_root="$ANDROID_HOME" --licenses
 sdkmanager --sdk_root="$ANDROID_HOME" \
-  "platform-tools" "emulator" "system-images;android-33;google_apis;arm64-v8a"</code></pre>
+  "cmdline-tools;latest" "platform-tools" "emulator" "system-images;android-33;google_apis;arm64-v8a"</code></pre>
 
     <p>Intel の Mac なら、最後の <code>arm64-v8a</code> を <code>x86_64</code> に読み替えてください。</p>
   </div>
