@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystoreと鍵の使用 | Squeeze Extra</title><link rel="stylesheet" href="../../style.css?v=20260922i"><script src="../../ui.js?v=20260922i" defer></script>
+<script src="extra.js?v=20260923a" defer></script></head>
+<body><nav class="topnav" data-extra-nav></nav><main>
+  <h1>Extra 4 — Keystoreと鍵の使用</h1>
+  <p class="subtitle">デジタルギフトのAPK内固定鍵と、Squeeze WalletのAndroid Keystore鍵を比較する</p>
+  <div class="badges"><span class="badge masvs">MASVS-CRYPTO-1</span><span class="badge">APK解析</span><span class="badge">Android Keystore</span></div>
+  <div class="callout note"><strong>この演習のゴール</strong><br>
+    鍵を取り出せないことと、その鍵をアプリに使わせられないことを分けて評価します。
+  </div>
+  <section class="layer basic">
+    <h2><span class="layer-tag">手順1</span>デジタルギフトを発行する</h2>
+    <p>Squeezeの「注文履歴」タブを開き、<b>ギフト</b>の「デジタルギフトを贈る」からメッセージを入れて「ギフトコードを発行」を押します。その後、APKを展開して固定鍵を探します。</p>
+    <pre><code>jadx-gui squeeze-debug.apk
+# CryptoActivity と "1234567890abcdef" を検索</code></pre>
+    <div class="predict"><strong>実行前に予測</strong><br>
+      APKだけを入手した解析者は、ギフトコードとWalletのどちらから鍵のバイト列を取り出せるでしょうか。
+    </div>
+    <h2><span class="layer-tag">手順2</span>Squeeze Walletへ保存する</h2>
+    <p>「アカウント」タブの<b>会員情報</b>にある「Squeeze Wallet」を開き、教材用のギフトコードを「ウォレットに追加」で保存します。「すぐに使う」と「画面ロックで確認」を切り替えて保存し直し、「残高を使う」までの条件がどう変わるかを比べます。</p>
+    <pre><code>adb logcat -s SqueezeWallet</code></pre>
+  </section>
+  <div class="callout fix"><strong>比較の要点</strong><br>
+    APK内に埋めた鍵は、アプリが使うための材料として配布物に含まれます。
+    Keystore鍵は非抽出でも、アプリに復号させる経路まで自動的に防ぐわけではありません。
+  </div>
+  <h2>Extraを終える</h2>
+  <pre><code>./tools/squeeze/reset-extra.sh</code></pre>
+  <p>この操作はExtraの2アプリだけを初期化します。Coreの学習記録とアプリデータは残ります。</p>
+  <div class="learn-actions"><a class="learn-btn" href="../../index.html">InsecureAppPlatformへ戻る</a></div>
+  <div class="pager"><a href="network.html">← ネットワーク境界</a><a href="../../index.html">Coreトップへ戻る →</a></div>
+</main><footer>InsecureAppPlatform Extra Lab — Squeeze</footer></body></html>

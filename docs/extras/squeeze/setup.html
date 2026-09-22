@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>準備 | Squeeze Extra</title><link rel="stylesheet" href="../../style.css?v=20260922i"><script src="../../ui.js?v=20260922i" defer></script>
+<script src="extra.js?v=20260923a" defer></script></head>
+<body><nav class="topnav" data-extra-nav></nav><main>
+  <h1>Extra 0 — 準備</h1>
+  <p class="subtitle">Coreの2つのAPKを消さず、Squeeze用の2つを追加する</p>
+  <div class="badges"><span class="badge masvs">Extra</span><span class="badge">所要 10分</span><span class="badge">AVD専用</span></div>
+  <div class="callout note"><strong>Coreには触れません</strong><br>
+    Squeezeは別パッケージです。元の被害者APKとAttacker APK、その保存データを残したまま追加できます。
+  </div>
+  <div class="os-switch" data-os-switch></div>
+
+  <section class="layer basic">
+    <h2><span class="layer-tag">手順1</span>ExtraのAPKを作る</h2>
+    <p>Extraの2つは配布物に入っていません。Coreと同じソース一式の中にあるので、そこでビルドします。
+    ビルドと同時にエミュレータへ入るので、<code>adb install</code> は要りません。</p>
+  <div data-os="mac">
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+./gradlew :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+  </div>
+  <div data-os="win">
+<pre><code>$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
+.\gradlew.bat :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+  </div>
+    <p class="learn-note">署名鍵はCoreと同じ <code>keys/</code> を使います。Coreの2つを消す必要はありません。</p>
+
+    <h2><span class="layer-tag">手順2</span>4つのアプリが共存していることを確認する</h2>
+    <pre><code>adb shell pm list packages -U | grep -E "insecureappplatform|attacker"</code></pre>
+    <p>次の4パッケージが別々に表示されれば準備完了です。</p>
+    <ul><li><code>com.example.insecureappplatform</code></li><li><code>com.example.attacker</code></li><li><code>com.example.insecureappplatform.squeeze</code></li><li><code>com.example.squeeze.attacker</code></li></ul>
+  </section>
+  <h2>Extraだけを初期化する</h2>
+  <pre><code>./tools/squeeze/reset-extra.sh</code></pre>
+  <p class="learn-note">SqueezeとSqueeze Labのデータだけを消します。Core教材のデータには触れません。</p>
+  <div class="learn-actions"><a class="learn-btn" href="../../index.html">InsecureAppPlatformへ戻る</a></div>
+  <div class="pager"><a href="index.html">← Extra概要</a><a href="storage.html">保存領域へ →</a></div>
+</main><footer>InsecureAppPlatform Extra Lab — Squeeze</footer></body></html>

@@ -22,4 +22,5 @@ dependencyResolutionManagement {
 rootProject.name = "InsecureAppPlatform"
 include(":app")
 include(":attacker")
- 
+include(":squeeze")
+include(":squeeze-attacker")

@@ -32,13 +32,14 @@ step() {
 }
 
 step "ビルド・ユニットテスト・lint" \
-  ./gradlew --quiet clean test lint :app:assembleDebug :attacker:assembleDebug
+  ./gradlew --quiet clean test lint :app:assembleDebug :attacker:assembleDebug \
+    :squeeze:assembleDebug :squeeze-attacker:assembleDebug
 
-step "2つの APK の署名が別物であること" \
+step "CoreとExtraの各APKペアの署名が別物であること" \
   ./tools/verify/verify-signatures.sh
 
 step "ガイドの JavaScript が構文的に妥当であること" \
-  bash -c 'for f in docs/*.js tools/frida/*.js; do node --check "$f" || exit 1; done'
+  bash -c 'while IFS= read -r f; do node --check "$f" || exit 1; done < <(find docs tools/frida -name "*.js" -type f)'
 
 # study/ は公開スナップショットに入れていない（正解と研究計画が入っているため）。
 # 参加者が配布ソースで run-checks.sh を回したときは、この段を飛ばす。

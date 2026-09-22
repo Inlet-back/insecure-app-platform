@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_home" android:icon="@drawable/ic_home" android:title="ホーム" />
+    <item android:id="@+id/nav_cart" android:icon="@drawable/ic_cart" android:title="カート" />
+    <item android:id="@+id/nav_orders" android:icon="@drawable/ic_receipt" android:title="注文履歴" />
+    <item android:id="@+id/nav_account" android:icon="@drawable/ic_account" android:title="アカウント" />
+</menu>

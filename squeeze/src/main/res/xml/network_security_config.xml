@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      第3章 (ネットワーク境界) の教材設定。
+
+      脆弱性 (MASVS-NETWORK-1): 10.0.2.2 に対して平文HTTPを許可している。
+      対象はエミュレータから見たホストのループバックのみ。外部サービスへは接続しない。
+
+      trust-anchors をあえて明示している。system だけを信頼し、user は含めていない。
+      これは Android 7 (API 24) 以降の既定の挙動そのもの。
+      Burp の CA を端末の「ユーザー証明書」として入れても HTTPS が復号できないのは、
+      暗号が強いからではなく、アプリがそのCAを信頼していないから。
+
+      差分実験: 下の <certificates src="user" /> のコメントを外して再ビルドすると、
+      同じ Burp が急に通るようになる。何が変わったのかを説明できること。
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <!-- <certificates src="user" /> -->
+        </trust-anchors>
+
+        <!--
+          ピン留めを採用し、«宣言で» 書くならここ。
+          手書き TrustManager より検証の順番を実装者が間違えにくい。
+          プラットフォームが通常の検証（チェーン・有効期限・発行者）を先に済ませ、
+          そのうえで pin を照合する。
+
+          NetworkActivity.pinningSocketFactory() は、同じことを手書きで
+          «どう間違えやすいか» を見せるために残してある教材用の実装。
+          ピンだけを見る実装にすると、期限切れでも偽の CA でも通ってしまう。
+
+          有効にする場合は、tools/mockserver/make-teaching-certs.sh が出力する
+          ピンを digest に貼り、予備のピン（鍵更新用のバックアップ）も併記すること。
+          expiration を過ぎると pin-set は無効になり、通常の検証だけに戻る。
+          これは「鍵を更新したのにアプリを更新できず、全ユーザーが接続できなくなる」
+          事故を避けるための仕掛けで、運用側のリスクがそのまま現れている箇所でもある。
+
+          なお Android の公式ドキュメントは、一般のアプリに証明書ピンニングを
+          «推奨していない»。CA の入れ替えやサーバ証明書の更新で自分のアプリだけが
+          落ちるリスクのほうが、多くの場合大きいという判断による。
+
+        <pin-set expiration="2027-01-01">
+            <pin digest="SHA-256">貼り付ける（現用の鍵）</pin>
+            <pin digest="SHA-256">貼り付ける（バックアップ鍵）</pin>
+        </pin-set>
+        -->
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/surface_soft" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_back_home" style="@style/BackButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="←  ホーム" />
+        <TextView style="@style/ScreenTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="スタッフログイン" />
+        <TextView style="@style/ScreenSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="ストア管理者アカウントでログインしてください。" />
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:hint="ユーザー名" app:boxBackgroundMode="outline">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_username" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:hint="パスワード" app:boxBackgroundMode="outline" app:endIconMode="password_toggle">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_password" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton android:id="@+id/btn_login" style="@style/PrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp" android:text="サインイン" />
+        <TextView android:id="@+id/tv_result" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/bg_result" android:textColor="@color/slate_700" />
+    </LinearLayout>
+</ScrollView>

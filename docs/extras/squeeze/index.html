@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extra: Squeeze ECアプリ演習 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="../../style.css?v=20260922i">
+<script src="../../ui.js?v=20260922i" defer></script>
+<script src="extra.js?v=20260923a" defer></script>
+</head>
+<body>
+<nav class="topnav" data-extra-nav></nav>
+<main>
+  <h1>Extra — Squeeze ECアプリ演習</h1>
+  <p class="subtitle">普通のECアプリを操作し、その裏側にあるAndroidの防御境界を観測する</p>
+  <div class="badges">
+    <span class="badge masvs">Extra</span><span class="badge">Core完了後・任意</span><span class="badge">別APK・別進捗</span>
+  </div>
+  <div class="callout vuln"><strong>教材専用</strong><br>
+    意図的に脆弱な実装を含みます。普段使いの実機ではなく、教材用エミュレータで実行してください。
+  </div>
+  <div class="callout note"><strong>このExtraの位置づけ</strong><br>
+    元のInsecureAppPlatformで4つの境界を学んだあと、同じ考え方を「教材画面」ではなく
+    商品購入・会員設定・Walletを備えた1つのアプリへ当てはめます。
+    完了状態はCore教材の進捗率や研究評価へ加算されません。
+  </div>
+  <h2>進める順番</h2>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="setup.html"><div class="ch-title">0. 準備</div><div class="ch-desc">Coreを消さずに、SqueezeとSqueeze Labを追加する。</div></a>
+    <a class="chapter-card" href="storage.html"><div class="ch-title">1. 保存領域</div><div class="ch-desc">同じ端末上の別アプリから何が読めるかを比べる。</div></a>
+    <a class="chapter-card" href="ipc.html"><div class="ch-title">2. IPC境界</div><div class="ch-desc">公開された窓口がOSの分離をどう越えるかを確かめる。</div></a>
+    <a class="chapter-card" href="network.html"><div class="ch-title">3. ネットワーク境界</div><div class="ch-desc">同じ注文を異なる信頼条件で送る。</div></a>
+    <a class="chapter-card" href="crypto.html"><div class="ch-title">4. Keystoreと鍵の使用</div><div class="ch-desc">APK内の鍵とAndroid Keystoreの鍵を比べる。</div></a>
+  </div>
+  <h2>Core教材との関係</h2>
+  <table>
+    <tr><th></th><th>Core</th><th>Squeeze Extra</th></tr>
+    <tr><td>対象APK</td><td><code>com.example.insecureappplatform</code></td><td><code>com.example.insecureappplatform.squeeze</code></td></tr>
+    <tr><td>攻撃者APK</td><td><code>com.example.attacker</code></td><td><code>com.example.squeeze.attacker</code></td></tr>
+    <tr><td>学習記録</td><td>Coreの進捗として記録</td><td>Coreとは別扱い</td></tr>
+  </table>
+  <div class="learn-actions"><a class="learn-btn" href="../../index.html">InsecureAppPlatformへ戻る</a></div>
+  <div class="pager"><a href="../../progress.html">← Coreの記録</a><a href="setup.html">準備へ →</a></div>
+</main>
+<footer>InsecureAppPlatform Extra Lab — Squeeze</footer>
+</body>
+</html>

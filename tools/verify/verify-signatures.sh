@@ -14,10 +14,13 @@ cd "$(dirname "$0")/../.."
 
 APP_APK="app/build/outputs/apk/debug/app-debug.apk"
 ATTACKER_APK="attacker/build/outputs/apk/debug/attacker-debug.apk"
+SQUEEZE_APK="squeeze/build/outputs/apk/debug/squeeze-debug.apk"
+SQUEEZE_ATTACKER_APK="squeeze-attacker/build/outputs/apk/debug/squeeze-attacker-debug.apk"
 
-if [[ ! -f "$APP_APK" || ! -f "$ATTACKER_APK" ]]; then
+if [[ ! -f "$APP_APK" || ! -f "$ATTACKER_APK" || ! -f "$SQUEEZE_APK" || ! -f "$SQUEEZE_ATTACKER_APK" ]]; then
   echo "[*] APK がないのでビルドする"
-  ./gradlew --quiet :app:assembleDebug :attacker:assembleDebug
+  ./gradlew --quiet :app:assembleDebug :attacker:assembleDebug \
+    :squeeze:assembleDebug :squeeze-attacker:assembleDebug
 fi
 
 find_apksigner() {
@@ -45,28 +48,34 @@ cert_sha256() { # $1 = apk
 
 APP_SHA=$(cert_sha256 "$APP_APK")
 ATTACKER_SHA=$(cert_sha256 "$ATTACKER_APK")
+SQUEEZE_SHA=$(cert_sha256 "$SQUEEZE_APK")
+SQUEEZE_ATTACKER_SHA=$(cert_sha256 "$SQUEEZE_ATTACKER_APK")
 
-echo "被害者アプリ   : $APP_SHA"
-echo "攻撃者アプリ   : $ATTACKER_SHA"
+echo "Core 被害者      : $APP_SHA"
+echo "Core 攻撃者      : $ATTACKER_SHA"
+echo "Squeeze          : $SQUEEZE_SHA"
+echo "Squeeze Lab      : $SQUEEZE_ATTACKER_SHA"
 echo
 
-if [[ -z "$APP_SHA" || -z "$ATTACKER_SHA" ]]; then
+if [[ -z "$APP_SHA" || -z "$ATTACKER_SHA" || -z "$SQUEEZE_SHA" || -z "$SQUEEZE_ATTACKER_SHA" ]]; then
   echo "[NG] 証明書を読み取れなかった。" >&2
   exit 1
 fi
 
-if [[ "$APP_SHA" == "$ATTACKER_SHA" ]]; then
+if [[ "$APP_SHA" == "$ATTACKER_SHA" || "$SQUEEZE_SHA" == "$SQUEEZE_ATTACKER_SHA" ]]; then
   cat >&2 <<'MSG'
 [NG] 2つの APK が同じ証明書で署名されている。
 
      このままだと、攻撃者アプリが宣言した READ_SESSION が «付与されてしまい» 、
      第2章 P4 が成功してしまう。教材の結論と逆になる。
 
+     CoreまたはSqueeze ExtraのAPKペアで署名が一致している。
+
      直し方:
        rm -rf keys/
-       ./gradlew :app:assembleDebug :attacker:assembleDebug
+       ./gradlew :app:assembleDebug :attacker:assembleDebug :squeeze:assembleDebug :squeeze-attacker:assembleDebug
 MSG
   exit 1
 fi
 
-echo "[OK] 2つの APK の証明書は別物。第2章の signature permission の実験が成立する。"
+echo "[OK] CoreとSqueeze Extraの各APKペアは別署名。signature permission の実験が成立する。"

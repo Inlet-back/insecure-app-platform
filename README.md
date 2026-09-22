@@ -34,6 +34,22 @@ GitHub が自動で付ける **Source code (zip)** と `git clone` は使わな�
 どちらにも署名鍵が入っておらず、配った APK を上書きインストールできません
 （`INSTALL_FAILED_UPDATE_INCOMPATIBLE` で止まります）。
 
+## Extra: Squeeze
+
+Core（第1〜4章）を終えた人向けの、任意の演習です。画面の名前が課題になっている教材用アプリではなく、
+商品を選んで買い、会員情報を登録し、ギフト残高を持つ1つの EC アプリを相手に、同じ4つの境界を確かめます。
+
+**配布する3点には入っていません。**ソース一式から自分でビルドしてください。
+
+```sh
+./gradlew :squeeze:assembleDebug :squeeze-attacker:assembleDebug
+```
+
+Core のアプリとは別のパッケージなので、同じエミュレータに4つ並べて入れられます。
+Extra をどこまでやっても、Core の進捗と研究の評価には入りません。
+
+手順は [Extra: Squeeze](https://inlet-back.github.io/insecure-app-platform/extras/squeeze/) にあります。
+
 ## 研究について
 
 この教材は研究の評価にも使っています。参加は任意で、参加しなくても教材の内容は変わりません。
@@ -48,6 +64,8 @@ GitHub が自動で付ける **Source code (zip)** と `git clone` は使わな�
 |---|---|
 | `app/` | 被害者アプリ |
 | `attacker/` | 攻撃者アプリ（別の UID・別の署名鍵） |
+| `squeeze/` | Extra用のSqueeze ECアプリ（Coreと別パッケージ） |
+| `squeeze-attacker/` | Squeeze専用の境界観測アプリ |
 | `docs/` | 教材本体。上記の URL で配信している中身そのもの |
 | `tools/mockserver/` | 第3章で使うモックサーバと教材用の証明書 |
 | `tools/frida/` | 観測用のスクリプト |

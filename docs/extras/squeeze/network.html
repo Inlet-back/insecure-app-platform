@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ネットワーク境界 | Squeeze Extra</title><link rel="stylesheet" href="../../style.css?v=20260922i"><script src="../../ui.js?v=20260922i" defer></script>
+<script src="extra.js?v=20260923a" defer></script></head>
+<body><nav class="topnav" data-extra-nav></nav><main>
+  <h1>Extra 3 — ネットワーク境界</h1>
+  <p class="subtitle">同じ商品、会員情報、注文操作のまま、通信経路の守りだけを変える</p>
+  <div class="badges"><span class="badge masvs">MASVS-NETWORK-1</span><span class="badge">HTTP</span><span class="badge">HTTPS</span><span class="badge">Pinning</span></div>
+  <div class="callout note"><strong>この演習のゴール</strong><br>
+    暗号化、証明書の信頼、公開鍵ピンニングがそれぞれ何を確認しているかを分けます。
+  </div>
+  <section class="layer basic">
+    <h2><span class="layer-tag">手順1</span>モックサーバを起動する</h2>
+    <pre><code>python3 tools/mockserver/server.py</code></pre>
+    <p class="learn-note">外部サービスには接続せず、ホストのループバックだけで待ち受けます。</p>
+    <h2><span class="layer-tag">手順2</span>共通の注文操作を確認する</h2>
+    <p>「ホーム」タブで商品の「追加」を押し、「カート」タブの「購入手続きへ」へ進みます。会員情報が未登録だとボタンが「会員情報を登録する」になるので、先に登録してから「注文を確定する」を押します。成功するとカートが空になるため、比較のたびに商品を追加し直してください。</p>
+    <div class="predict"><strong>実行前に予測</strong><br>
+      HTTP、通常のHTTPS、証明書ピンニングで、経路上の観測者に見えるものと接続の成否がどう変わるか予想します。
+    </div>
+    <h2><span class="layer-tag">手順3</span>通信モードを1つずつ切り替える</h2>
+    <pre><code>./tools/squeeze/set-network-mode.sh http
+./tools/squeeze/set-network-mode.sh https
+./tools/squeeze/set-network-mode.sh pinned</code></pre>
+    <p>各コマンドのあとにSqueezeを開き、同じ注文操作を行います。教材用モードは通常画面には表示されません。</p>
+  </section>
+  <div class="callout fix"><strong>比較の要点</strong><br>
+    HTTPSは端末が通信相手の証明書を信頼できるか検証します。ピンニングは通常のTLS検証を置き換えず、
+    その後に特定の公開鍵を追加確認します。このExtraの初期ピンは比較用に不一致です。
+  </div>
+  <div class="learn-actions"><a class="learn-btn" href="../../index.html">InsecureAppPlatformへ戻る</a></div>
+  <div class="pager"><a href="ipc.html">← IPC境界</a><a href="crypto.html">Keystoreと鍵へ →</a></div>
+</main><footer>InsecureAppPlatform Extra Lab — Squeeze</footer></body></html>

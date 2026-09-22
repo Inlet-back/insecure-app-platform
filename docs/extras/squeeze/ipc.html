@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPC境界 | Squeeze Extra</title><link rel="stylesheet" href="../../style.css?v=20260922i"><script src="../../ui.js?v=20260922i" defer></script>
+<script src="extra.js?v=20260923a" defer></script></head>
+<body><nav class="topnav" data-extra-nav></nav><main>
+  <h1>Extra 2 — IPC境界</h1>
+  <p class="subtitle">privateファイルが閉じていても、公開されたActivity・Provider・Receiverは別の入口になる</p>
+  <div class="badges"><span class="badge masvs">MASVS-PLATFORM-1</span><span class="badge">exported</span><span class="badge">signature permission</span></div>
+  <div class="callout note"><strong>この演習のゴール</strong><br>
+    ファイルの保護と、アプリが外部へ公開するIPC窓口の保護を別々に評価します。
+  </div>
+  <section class="layer basic">
+    <h2><span class="layer-tag">手順1</span>正規の操作を確認する</h2>
+    <p>Squeezeの「アカウント」タブを開き、<b>ストア</b>の「スタッフログイン」からストア管理を開きます。会員情報は前の演習で保存した状態にします。</p>
+    <div class="predict"><strong>実行前に予測</strong><br>
+      直接起動、公開Provider、Broadcastのそれぞれについて、「通る／OSが止める」を予想してください。
+    </div>
+    <h2><span class="layer-tag">手順2</span>Squeeze Labから比較する</h2>
+    <table class="matrix"><tr><th>比較</th><th>操作</th></tr>
+      <tr><td>Provider</td><td>公開された窓口／保護された窓口から会員情報を取得</td></tr>
+      <tr><td>Activity</td><td>ストア管理画面／非公開の会員情報画面を直接開く</td></tr>
+      <tr><td>Receiver</td><td>通常経路／署名権限で保護した経路へstaff変更を送る</td></tr>
+    </table>
+    <h2><span class="layer-tag">手順3</span>Squeeze側で結果を確認する</h2>
+    <p>権限変更を送ったあとSqueezeを開き、「アカウント」タブの会員種別の表示を確認します。権限と署名の状態は、Squeeze Labの「権限と署名の状態を確認する」（P4b）の結果欄で確認できます。</p>
+  </section>
+  <div class="callout fix"><strong>比較の要点</strong><br>
+    privateファイルの権限を変えなくても、exported componentが資産への経路になります。
+    signature permissionは、別の鍵で署名されたSqueeze Labへの配送や参照を止めます。
+  </div>
+  <div class="learn-actions"><a class="learn-btn" href="../../index.html">InsecureAppPlatformへ戻る</a></div>
+  <div class="pager"><a href="storage.html">← 保存領域</a><a href="network.html">ネットワーク境界へ →</a></div>
+</main><footer>InsecureAppPlatform Extra Lab — Squeeze</footer></body></html>

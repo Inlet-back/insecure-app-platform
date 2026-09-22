@@ -18,6 +18,7 @@
     { href: "surface-map.html", label: "攻撃面マップ" },
     { href: "closing.html", label: "終章" },
     { href: "progress.html", label: "記録" },
+    { href: "extras/squeeze/index.html", label: "Extra: Squeeze" },
     { href: "https://github.com/Inlet-back/insecure-app-platform", label: "リポジトリ" },
   ];
 

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      第2章 (IPC 境界) で使う独自 permission。
+      protectionLevel="signature" は「宣言したアプリと同じ証明書で署名されたアプリにだけ与える」。
+
+      攻撃者アプリ (attacker モジュール) は、この permission を
+      AndroidManifest で実際に <uses-permission> として要求している。
+      それでも付与されないのは、被害者アプリと攻撃者アプリを
+      «別々の鍵で署名している» から (各モジュールの build.gradle.kts の signingConfigs)。
+
+      既定の debug keystore を両方で共有していると証明書が一致してしまい、
+      permission が付与されて教材の結論が逆になる。署名の分離はそのための担保。
+      確認方法: tools/verify/verify-signatures.sh を実行し、
+      2つの APK の証明書 SHA-256 が一致しないことを見る
+      (中身は apksigner verify の print-certs オプション)。
+    -->
+    <permission
+        android:name="com.example.insecureappplatform.squeeze.permission.READ_SESSION"
+        android:label="Read session data"
+        android:protectionLevel="signature" />
+
+    <!--
+      allowBackup は true のまま残している。第1章で「平文で保存したものは
+      バックアップにも載る」ことを観察するため。
+      ただし Keystore の鍵に紐付いたファイル (EncryptedSharedPreferences、
+      第4章の暗号文) は、下の2つのルールで明示的に除外している。
+      除外しないと、復元先で復号できないファイルだけが戻ってくる。
+    -->
+    <application
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.InsecureAppPlatform">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 第1章: プロセス境界 -->
+        <activity
+            android:name=".InsecureStorageActivity"
+            android:exported="false"
+            android:label="会員情報" />
+
+        <activity
+            android:name=".SecureStorageActivity"
+            android:exported="false"
+            android:label="お支払い方法" />
+
+        <!-- 第1章 Deep: 修正案 A〜D の比較 -->
+        <activity
+            android:name=".FixCompareActivity"
+            android:exported="false"
+            android:label="保存方式の比較" />
+
+        <!-- 第2章: IPC 境界 -->
+        <activity
+            android:name=".AuthActivity"
+            android:exported="false"
+            android:label="スタッフログイン" />
+
+        <!-- 脆弱性: 認証の先の画面が exported。am start / 他アプリから直接開ける -->
+        <activity
+            android:name=".AdminActivity"
+            android:exported="true"
+            android:label="ストア管理" />
+
+        <!-- 脆弱性: permission なしの exported provider。誰でも読める窓口 -->
+        <provider
+            android:name=".SessionProvider"
+            android:authorities="com.example.insecureappplatform.squeeze.session"
+            android:exported="true" />
+
+        <!-- 防御側: 中身は同一クラスだが signature permission で守られている -->
+        <provider
+            android:name=".ProtectedSessionProvider"
+            android:authorities="com.example.insecureappplatform.squeeze.session.protected"
+            android:exported="true"
+            android:permission="com.example.insecureappplatform.squeeze.permission.READ_SESSION" />
+
+        <!-- 脆弱性: 送信元を確認せず Intent の中身を信用する exported receiver -->
+        <receiver
+            android:name=".RoleReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.insecureappplatform.squeeze.action.SET_ROLE" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+          防御側: 同じ役割の receiver に signature permission を要求している。
+          この permission を持たない送信元には、そもそも配送されない。
+          Provider の P3 / P4 と同じ「コードではなく Manifest の1行」の対比。
+        -->
+        <receiver
+            android:name=".ProtectedRoleReceiver"
+            android:exported="true"
+            android:permission="com.example.insecureappplatform.squeeze.permission.READ_SESSION">
+            <intent-filter>
+                <action android:name="com.example.insecureappplatform.squeeze.action.SET_ROLE_PROTECTED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 第3章: ネットワーク境界 -->
+        <activity
+            android:name=".NetworkActivity"
+            android:exported="false"
+            android:label="ご注文内容の確認" />
+
+        <!-- 第4章: 実行環境 / TEE 境界 -->
+        <activity
+            android:name=".CryptoActivity"
+            android:exported="false"
+            android:label="デジタルギフト" />
+
+        <activity
+            android:name=".KeystoreActivity"
+            android:exported="false"
+            android:label="Squeeze Wallet" />
+    </application>
+
+</manifest>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Android 11 (API 30) 以降のパッケージ可視性ルール。
+      これを書かないと「被害者アプリが存在しない」ように見えてしまい、
+      権限で弾かれたのか可視性で弾かれたのか区別できなくなる。
+    -->
+    <queries>
+        <package android:name="com.example.insecureappplatform.squeeze" />
+    </queries>
+
+    <!--
+      第2章の検証ケース。被害者アプリが signature で宣言した permission を、
+      攻撃者アプリ側から «要求だけは» している。
+
+      これを書かないと、P4 が失敗したときに
+        (a) そもそも permission を宣言していないから拒否された
+        (b) 宣言したが署名が一致しないので付与されなかった
+      のどちらなのか区別できない。書いたうえで拒否されることが、
+      signature の protectionLevel が効いている証拠になる。
+
+      付与されたかどうかは攻撃者アプリの P4-perm で確認できる。
+    -->
+    <uses-permission android:name="com.example.insecureappplatform.squeeze.permission.READ_SESSION" />
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+
+        <activity
+            android:name=".AttackerActivity"
+            android:exported="true"
+            android:label="Squeeze Lab">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>保存領域 | Squeeze Extra</title><link rel="stylesheet" href="../../style.css?v=20260922i"><script src="../../ui.js?v=20260922i" defer></script>
+<script src="extra.js?v=20260923a" defer></script></head>
+<body><nav class="topnav" data-extra-nav></nav><main>
+  <h1>Extra 1 — 保存領域</h1>
+  <p class="subtitle">会員情報の保存場所を知っている別アプリは、その中身を読めるのか</p>
+  <div class="badges"><span class="badge masvs">MASVS-STORAGE-1</span><span class="badge">Squeeze</span><span class="badge">Squeeze Lab</span></div>
+  <div class="callout note"><strong>この演習のゴール</strong><br>
+    保存場所を知ることと、ファイルを開く権限を持つことを分けて説明できるようになります。
+  </div>
+  <section class="layer basic">
+    <h2><span class="layer-tag">手順1</span>Squeezeで会員情報を保存する</h2>
+    <p>下の「アカウント」タブを開き、<b>会員情報</b>の「プロフィールとログイン情報」から、任意の教材用ユーザー名とパスワードを保存します。本物の認証情報は入力しないでください。</p>
+    <div class="predict"><strong>実行前に予測</strong><br>
+      Squeeze Labはファイルの正確な保存場所を知っています。この条件だけでSqueeze専用ファイルを読めるでしょうか。
+    </div>
+    <h2><span class="layer-tag">手順2</span>Squeeze Labで境界を比較する</h2>
+    <ol><li>「SqueezeとこのアプリのUIDを比べる」</li><li>「Squeezeの保存ファイルを直接読む」</li><li>対照として「このアプリ自身の保存ファイルを読む」</li></ol>
+  </section>
+  <div class="callout blocked"><strong>失敗は観測結果です</strong><br>
+    別UIDからSqueezeのprivate dataを開けない結果は、Linuxのファイル権限とSELinuxが働いた証拠です。
+    自分自身のファイルが読める対照実験と組み合わせて判断します。
+  </div>
+  <h2>次に見ること</h2>
+  <p>次のIPC演習ではファイルを直接開きません。Squeezeが外部へ公開した窓口を通ると、同じデータへ届くかを比較します。</p>
+  <div class="learn-actions"><a class="learn-btn" href="../../index.html">InsecureAppPlatformへ戻る</a></div>
+  <div class="pager"><a href="setup.html">← 準備</a><a href="ipc.html">IPC境界へ →</a></div>
+</main><footer>InsecureAppPlatform Extra Lab — Squeeze</footer></body></html>

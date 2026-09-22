@@ -51,11 +51,15 @@ rm -f server.csr ca-cert.srl
 # ここを忘れると、アプリは «古い CA» を信頼したまま «新しい CA» が署名した
 # サーバ証明書に出会うことになり、第3章 手順4 と同じ Trust anchor not found が出る。
 # 原因がガイドの想定と同じ見た目になるので、たどり着くのが難しい。
-APP_CA="../../app/src/main/res/raw/mockserver_ca.pem"
-cp ca-cert.pem "$APP_CA"
-echo "[*] アプリ同梱の CA を更新した: app/src/main/res/raw/mockserver_ca.pem"
+# Extra の squeeze も同じ CA を同梱している。ここを app だけにすると、
+# Extra «だけ» が古い CA を信じたまま残る。
+for m in app squeeze; do
+  cp ca-cert.pem "../../$m/src/main/res/raw/mockserver_ca.pem"
+  echo "[*] アプリ同梱の CA を更新した: $m/src/main/res/raw/mockserver_ca.pem"
+done
 echo "[!] アプリの «再ビルドと再インストール» が要る:"
 echo "      ./gradlew :app:installDebug"
+echo "      ./gradlew :squeeze:installDebug   # Extra を入れている場合"
 echo "    これをやらないと Trust anchor not found で落ちる。"
 
 echo
