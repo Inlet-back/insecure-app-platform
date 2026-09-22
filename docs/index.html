@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InsecureAppPlatform | Android セキュリティ学習プラットフォーム</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
-<script src="learn.js?v=20260922c" defer></script>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+<script src="learn.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -36,10 +36,21 @@
     <a href="https://github.com/Inlet-back/insecure-app-platform" target="_blank" rel="noopener">リポジトリ</a>にあります。
   </div>
 
+  <h2>始める前に</h2>
+  <p>この教材を研究の評価にも使います。研究への参加は任意で、参加しなくても教材の内容は変わりません。
+  研究に参加する場合は、教材を読む前に説明を確認して同意してください。</p>
+
   <div class="learn-actions">
-    <a class="learn-btn" href="intro-sandbox.html">導入を読む（15分・座学のみ）</a>
-    <a class="learn-btn" href="setup.html">環境構築</a>
-    <a class="learn-btn" href="quickcheck.html">5分クイックチェック</a>
+    <a class="learn-btn" href="study.html">研究の説明を読んで始める</a>
+    <a class="learn-link" href="intro-sandbox.html">研究には参加せず、教材だけ始める</a>
+  </div>
+
+  <p>導入を読んだら、もう1ページだけ座学が続きます。章は「どの境界が破れるか」で並んでいますが、
+  実際の診断で先に決めるのは<b>誰として攻めるのか</b>のほうです。
+  この教材に出てくる7つの立場に名前と前提を付けてあります。初学者が読むのは最初の3枚だけです。</p>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="attacker-positions.html">攻撃者の立場を決める（初学者は5分・座学のみ）</a>
   </div>
 
   <h2>3つの層</h2>
@@ -61,7 +72,7 @@
 
   <h2>通しでやる順番</h2>
   <ol>
-    <li>何もやる前に <a href="quiz.html?ch=all">概念テスト（全章）</a> を事前として受ける。ほとんど解けなくて構いません</li>
+    <li>研究に参加する場合は、教材を読む前に<a href="study.html">同意と学習前テスト</a>を済ませる。参加しない場合はそのまま導入へ進む</li>
     <li><a href="intro-sandbox.html">導入</a> を読み、<a href="setup.html">環境構築</a> を済ませる</li>
     <li>各章を Basic → Standard と進める。Standard では手順ごとに、打つ前に予測を書く</li>
     <li>章末の <a href="explain.html">説明課題</a>。書けなければ、その章の Standard に戻る</li>
@@ -70,10 +81,26 @@
   </ol>
 
   <div class="learn-actions">
+    <a class="learn-btn" href="study.html">研究参加・学習前テスト</a>
+    <a class="learn-btn" href="learning-loop.html">学習ループの説明</a>
     <a class="learn-btn" href="quiz.html">概念テスト</a>
     <a class="learn-btn" href="explain.html">説明課題</a>
     <a class="learn-btn" href="oracle.html">オラクル演習</a>
     <a class="learn-btn" href="progress.html">自分の記録</a>
+  </div>
+
+  <div class="callout note">
+    <strong>各章は攻撃者を固定してから始めます</strong><br>
+    資産、攻撃者の能力、成立の前提、除外する能力、攻撃成功、観測点をまとめた
+    <b>脅威ブリーフ</b>が各章の冒頭にあります。道具を動かすことではなく、
+    「誰に対して、どの経路が止まったか」を判定することが各章のゴールです。
+  </div>
+
+  <div class="callout blocked">
+    <strong>約束：失敗する演習があります</strong><br>
+    この教材には、<b>わざと成功しない手順</b>が入っています。
+    そこには「これは OS が守った結果です」と必ず書いてあります。
+    コマンドが弾かれたとき、それはあなたの操作ミスではなく<b>観察対象</b>です。
   </div>
 
   <h2>章</h2>
@@ -94,7 +121,7 @@
       暗号の強さではなく信頼ストアの中身で決まることを実験で示す。</p>
     </a>
     <a class="chapter-card" href="chapter4-tee.html">
-      <h3>第4章 — 実行環境境界</h3>
+      <h3>第4章 — Android Keystoreと鍵の使用</h3>
       <p>APK から鍵を取り出して復号する。次に Keystore に鍵を移し、
       「取り出せない」と「使えない」が別物であることを確かめる。</p>
     </a>
@@ -117,6 +144,7 @@
     <tr><td>攻撃者アプリ</td><td><code>com.example.attacker</code>（別 APK・別 UID）</td></tr>
     <tr><td>minSdk / targetSdk</td><td>24 / 35</td></tr>
     <tr><td>Basic で使う道具</td><td><code>adb</code> のみ</td></tr>
+    <tr><td>学習の記録</td><td>ブラウザ内に保存。研究参加へ同意した場合だけ、研究用イベントを別送信</td></tr>
     <tr><td>Standard で使う道具</td><td><code>adb</code>、攻撃者アプリ、モックサーバ、Burp（任意）</td></tr>
     <tr><td>Deep で使う道具</td><td>root 化 AVD、Frida</td></tr>
     <tr><td>学習の記録</td><td>ブラウザ内に保存（外部送信なし・JSON で書き出し可）</td></tr>

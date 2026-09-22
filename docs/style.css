@@ -406,6 +406,17 @@ td.blank {
 .learn-step.result.missed  .learn-tag { background: var(--danger); }
 
 .learn-setup, .learn-note { color: var(--text-muted); font-size: 14px; }
+.learn-action {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.65;
+}
+/* 予測・実行前に、直後の「実行結果例」で答えが見えないようにする。 */
+.learn-step.predict + pre.out,
+.learn-step.observe + pre.out { display: none; }
 .learn-q { font-weight: 600; margin: 10px 0; }
 .learn-mine { font-size: 14px; }
 .learn-lead { font-weight: 600; margin: 12px 0 6px; }
@@ -695,6 +706,83 @@ main > .who {
    攻撃者の立場（カード）と攻撃面マップ
    ======================================================================= */
 
+.threat-brief {
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 10px;
+  margin: 1.4rem 0 2rem;
+  overflow: hidden;
+  background: var(--bg-alt);
+}
+.threat-head {
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  border-bottom: 1px solid var(--border);
+}
+.threat-head .learn-tag { margin-right: 0.65rem; }
+.threat-brief dl { margin: 0; }
+.threat-brief dl div {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 0.28fr) 1fr;
+  border-bottom: 1px solid var(--border);
+}
+.threat-brief dl div:last-child { border-bottom: 0; }
+.threat-brief dt,
+.threat-brief dd { margin: 0; padding: 0.58rem 0.9rem; }
+.threat-brief dt { font-weight: 700; color: var(--text-muted); }
+.threat-brief dd { border-left: 1px solid var(--border); }
+.threat-more { margin: 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+.threat-more summary { margin: 0; padding: 0.7rem 1rem; color: var(--text-muted); }
+.threat-more[open] summary { border-bottom: 1px solid var(--border); }
+.chapter-detail { margin: 1rem 0 1.5rem; }
+.chapter-detail > summary { font-weight: 700; }
+.short-route { border-left: 4px solid var(--success); }
+
+.study-checks {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-alt);
+}
+.study-checks label { display: flex; gap: 0.65rem; align-items: flex-start; }
+.study-checks input { margin-top: 0.3rem; }
+.study-id {
+  padding: 1rem;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: var(--bg-alt);
+  overflow-wrap: anywhere;
+}
+.study-id code { font-size: 1.05rem; }
+.study-terms div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.25fr) 1fr;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.study-terms dt { font-weight: 700; color: var(--text-muted); }
+.study-terms dd { margin: 0; }
+.study-question {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 1.4rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-alt);
+}
+.study-question legend {
+  padding: 0 0.35rem;
+  font-weight: 700;
+  line-height: 1.65;
+}
+.study-question label { display: flex; gap: 0.55rem; align-items: flex-start; }
+.study-question input { margin-top: 0.3rem; }
+
 /* ---- 立場カード。端末の外/中で色を分ける ---- */
 .pos-grid {
   display: grid;
@@ -829,6 +917,8 @@ html { scroll-padding-top: 4.5rem; }
   .learn-step, .learn-panel, .learn-inquiry { padding: 12px 13px; }
   .sf-row { padding: 12px 13px; }
   .pos-grid { grid-template-columns: 1fr; }
+  .threat-brief dl div { grid-template-columns: 1fr; }
+  .threat-brief dd { border-left: 0; padding-top: 0; }
   .learn-table th { width: auto; }
   .learn-actions .learn-btn { flex: 1 1 auto; text-align: center; }
 

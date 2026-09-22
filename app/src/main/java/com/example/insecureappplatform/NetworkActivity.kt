@@ -27,7 +27,7 @@ import javax.net.ssl.X509TrustManager
  * 「端末の中では OS が守ってくれたデータが、外に出た瞬間どうなるか」を見る。
  *
  * 3つのボタンは同じデータを同じサーバに送る。違うのは経路の守り方だけ。
- *   1. HTTP           → 誰でも読める。nc や Burp でそのまま見える
+ *   1. HTTP           → 通信を観測・中継できる相手には平文が見える
  *   2. HTTPS          → 通るかどうかは「端末が相手の証明書を信じるか」で決まる。
  *                        Burp を挟むと、CA をどこに入れたかで結果が変わる (差分実験)
  *   3. HTTPS + ピン留め → 通常の TLS 検証を通したうえで公開鍵も照合する。
@@ -132,7 +132,7 @@ class NetworkActivity : AppCompatActivity() {
      * 検証の順番を間違えようがないぶん安全 (第3章の本文を参照)。
      */
     private fun pinningSocketFactory() = SSLContext.getInstance("TLS").apply {
-        val platform = defaultTrustManager()
+        val platform = teachingCaTrustManager()
         val tm = object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) =
                 platform.checkClientTrusted(chain, authType)
@@ -163,7 +163,7 @@ class NetworkActivity : AppCompatActivity() {
      * ピン以前に必ず落ちる。逆に trust anchor を渡すだけで pin を見なければ、
      * 期限切れの証明書でも通ってしまう。2つは別の検証であり、両方要る。
      */
-    private fun defaultTrustManager(): X509TrustManager {
+    private fun teachingCaTrustManager(): X509TrustManager {
         val anchors = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
             load(null, null)
             resources.openRawResource(R.raw.mockserver_ca).use { input ->

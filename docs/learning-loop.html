@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学習ループ | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>学習ループ</h1>
+  <p class="subtitle">手を動かしただけで終わらせないための仕組み</p>
+
+  <div class="callout note">
+    <strong>なぜこれが要るのか</strong><br>
+    コマンドを打って結果を眺めるだけだと、「そういうものか」で終わる。
+    <b>先に予測を書く</b>と、外れた瞬間に自分の思い込みが表に出る。そこが学習の起点になる。
+    予測を書かせるだけの教材は飛ばされるので、このプラットフォームでは
+    <b>予測を入れるまで解説が出ない</b>ようにしてある。
+  </div>
+
+  <h2>0. 脅威を固定する</h2>
+  <p>各章は、操作より先に<b>脅威ブリーフ</b>を置きます。資産、守る性質、攻撃者の能力、成立の前提、
+  この実験で除外する能力、攻撃成功、観測点を先に固定します。</p>
+  <p><code>run-as</code>、Burp、Fridaは攻撃者の名前ではなく道具です。同じ道具でも前提が違えば結論が変わるため、
+  章末では「安全になった」ではなく、<b>能力Xに対して経路Yを止めたが、経路Zは残る</b>という形で判定します。</p>
+
+  <h2>4つの段</h2>
+  <div class="loop">
+    <div>
+      <h4>① 予測する</h4>
+      <p>実行前に「成功する / 失敗する」と、その理由を入力する。ガイドの各手順に欄がある。</p>
+    </div>
+    <div>
+      <h4>② 確かめる</h4>
+      <p>実際に打って結果を入れる。ここで初めて解説が開く。</p>
+    </div>
+    <div>
+      <h4>③ 説明する</h4>
+      <p>章末に、自分の言葉で仕組みを書く。観点は自己採点。</p>
+    </div>
+    <div>
+      <h4>④ 検証する</h4>
+      <p>概念テストと、AI の出力を実験で反証する課題。</p>
+    </div>
+  </div>
+
+  <h2>① 予測する / ② 確かめる</h2>
+  <p>各章の Standard 層と Deep 層の冒頭に、こういう欄が埋め込んであります。
+  操作は全部ページの中で完結する。</p>
+
+  <div class="learn-step predict">
+    <div class="learn-head"><span class="learn-tag">予測</span>（見本）run-as を外して shared_prefs を読む</div>
+    <p class="learn-q">adb shell から直接 cat は通るか。</p>
+    <div class="learn-choice">
+      <label><input type="radio" disabled> 成功する / 通る / 読める</label>
+      <label><input type="radio" disabled> 失敗する / 止められる / 読めない</label>
+    </div>
+    <p class="learn-note">…理由を書いて記録すると、次に「実際の結果」を入れる欄に変わる。</p>
+  </div>
+
+  <p>結果を入れると、予測・実測・正解が並び、<b>なぜそうなるのか</b>が開く。
+  予測を外していた場合は、そこで何を見直せばよいかも出る。</p>
+
+  <div class="callout blocked">
+    <strong>外してよい</strong><br>
+    的中率は高ければよいものではない。外した手順は <a href="progress.html">記録</a> に残り、
+    「どこで誤解していたか」の記録になる。むしろそこが成果物になる。
+  </div>
+
+  <h2>③ 説明する</h2>
+  <p>章末に <a href="explain.html">説明課題</a> がある。4〜5問に自分の言葉で答え、
+  そのあと「必要な観点が入っているか」を自己採点する。
+  抜けている観点には、どの手順に戻ればよいかが表示される。</p>
+
+  <h2>④ 検証する</h2>
+  <p><a href="quiz.html">概念テスト</a>の選択肢には、実際によくある誤解が仕込んであります。
+  「root を取られたら暗号化は無意味」「HTTPS なら中身は見られない」といったもので、
+  引っかかった誤解がその場で名指しされる。</p>
+
+  <p><a href="oracle.html">オラクル演習</a>は AI が出した診断と修正案を判定する課題。
+  実在しない API を使った修正、ファイル名を変えただけの「修正」、
+  正しく見えるが攻撃者の位置を場合分けしていない「問題なし」判定などが混ざっている。
+  <b>脆弱性を見つける課題ではなく、主張を実験で棄却する課題</b>。</p>
+
+  <h2>記録</h2>
+  <p><a href="progress.html">記録</a>のページに、手順ごとの状態（未着手 / 予測済み / 的中 / 外した）、
+  予測の的中率、外した手順とそのときの理由、概念テストの事前事後の差がまとまる。</p>
+
+  <div class="callout note">
+    <strong>記録の置き場所</strong><br>
+    通常の学習記録はブラウザの中だけに保存され、JSONで持ち出せます。
+    研究用の集計はこれとは別で、<a href="study.html">研究参加</a>に明示同意した場合だけ、
+    自由記述を除く構造化イベントを外部へ送ります。同意しなくても教材は利用できます。<br>
+    <b>ページは <code>http://localhost:8000/docs/</code> から開くこと。</b>
+    <code>file://</code> で開くと保存できないブラウザがある。起動方法は
+    <a href="setup.html">環境構築</a> を参照。
+  </div>
+
+  <h2>おすすめの順番</h2>
+  <ol>
+    <li>研究参加者は、教材を見る前に<a href="study.html">研究参加</a>から学習前テストを受ける。教材内の概念テストは練習用で、研究テストとは分ける</li>
+    <li>各章を Basic → Standard と進める。Standard では手順ごとに予測 → 確認</li>
+    <li>章末で説明課題。書けなければ、その章の Standard に戻る</li>
+    <li>全章が終わったら概念テストを<b>事後</b>として受ける。事前との差が出る</li>
+    <li><a href="progress.html">記録</a>で全体を振り返る</li>
+  </ol>
+
+  <div class="pager">
+    <a href="index.html">← Home</a>
+    <a href="chapter1-process.html">第1章 プロセス境界 →</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>

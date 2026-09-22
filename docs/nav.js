@@ -7,12 +7,14 @@
   const BRAND = { href: "index.html", label: "InsecureAppPlatform" };
 
   const PAGES = [
+    { href: "study.html", label: "研究参加" },
     { href: "intro-sandbox.html", label: "導入" },
     { href: "setup.html", label: "環境構築" },
+    { href: "learning-loop.html", label: "学習ループ" },
     { href: "chapter1-process.html", label: "Ch1: プロセス境界" },
     { href: "chapter2-ipc.html", label: "Ch2: IPC境界" },
     { href: "chapter3-network.html", label: "Ch3: ネットワーク境界" },
-    { href: "chapter4-tee.html", label: "Ch4: TEE境界" },
+    { href: "chapter4-tee.html", label: "Ch4: Keystoreと鍵の使用" },
     { href: "surface-map.html", label: "攻撃面マップ" },
     { href: "closing.html", label: "終章" },
     { href: "progress.html", label: "記録" },
@@ -38,4 +40,12 @@
     nav.appendChild(link(BRAND, true));
     PAGES.forEach((p) => nav.appendChild(link(p)));
   });
+
+  // 研究ログは別ファイルに隔離する。同意・送信先がない既定状態では外部送信しない。
+  if (!window.InsecureStudy && !document.querySelector('script[src^="study.js"]')) {
+    const script = document.createElement("script");
+    script.src = "study.js?v=20260922i";
+    script.defer = true;
+    document.head.appendChild(script);
+  }
 })();

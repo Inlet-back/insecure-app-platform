@@ -40,6 +40,21 @@ step "2つの APK の署名が別物であること" \
 step "ガイドの JavaScript が構文的に妥当であること" \
   bash -c 'for f in docs/*.js tools/frida/*.js; do node --check "$f" || exit 1; done'
 
+# study/ は公開スナップショットに入れていない（正解と研究計画が入っているため）。
+# 参加者が配布ソースで run-checks.sh を回したときは、この段を飛ばす。
+if [[ -d study ]]; then
+  step "研究用の設問・設定・分析処理が妥当であること" \
+    bash -c 'python3 -m json.tool docs/content/study-config.json >/dev/null &&
+             python3 -m json.tool docs/content/instruments.json >/dev/null &&
+             python3 -m json.tool study/instruments.json >/dev/null &&
+             python3 -m json.tool study/google-apps-script/appsscript.json >/dev/null &&
+             python3 -m unittest discover -s study/tests -p "test_*.py"'
+else
+  step "研究用の設問・設定が妥当であること（配布ソース）" \
+    bash -c 'python3 -m json.tool docs/content/study-config.json >/dev/null &&
+             python3 -m json.tool docs/content/instruments.json >/dev/null'
+fi
+
 step "モックサーバが構文的に妥当であること" \
   python3 -m py_compile tools/mockserver/server.py
 

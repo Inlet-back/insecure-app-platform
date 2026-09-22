@@ -27,7 +27,7 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * 第4章 (実行環境境界)。
+ * 第4章 (Android Keystoreと鍵の使用)。
  *
  * [CryptoActivity] との違いは鍵の置き場所だけ。
  * こちらは Android Keystore に鍵を作るので、鍵のバイト列はアプリのプロセスにも

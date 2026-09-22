@@ -1,0 +1,62 @@
+{
+  "ch1": {
+    "title": "取得されたアプリデータから、保存中の秘密を回収できるか",
+    "protect": "端末に保存したログイン用の秘密",
+    "opponent": "アプリのデータファイルをコピーできた人。端末は操作できない",
+    "goal": "平文保存と暗号化保存で、ファイルから読める内容がどう変わるか",
+    "asset": "端末に保存されたセッショントークン（画面では教材用パスワードを代用）",
+    "property": "機密性",
+    "attacker": "アプリのデータファイルのコピーを取得し、オフラインで読める人",
+    "preconditions": "ファイルは取得済みだが、動作中の端末・Keystore・アプリプロセスは操作できない",
+    "excluded": "別UIDアプリ、rootで動作中の端末を操作する能力、Fridaによるプロセス内実行",
+    "claim": "平文保存なら値を回収できる。端末固有鍵で暗号化すると、ファイルだけでは平文を回収できない",
+    "success": "保存された値と同じ平文を取得する",
+    "observe": "ファイル内容と、復号に必要な鍵へ到達できるか",
+    "residual": "rootからプロセス内実行へ進める相手は、アプリに復号させられる。run-asはこの章では保存形式を観察する教材用の手段"
+  },
+  "ch2": {
+    "title": "別署名アプリから、公開されたIPC窓口を通ってセッションへ届くか",
+    "protect": "被害者アプリが持つログイン状態と権限",
+    "opponent": "同じ端末に入った、普通の別アプリ",
+    "goal": "公開設定とpermissionを変えると、同じ攻撃が止まるか",
+    "asset": "被害者アプリが保持するセッション情報",
+    "property": "機密性（Provider本編）／完全性（Receiver派生課題）",
+    "attacker": "同じ端末にインストールされた、別UID・別署名の通常アプリ",
+    "preconditions": "攻撃者アプリは対象のauthority・component名を知り、必要なuses-permissionも宣言している",
+    "excluded": "root、run-as、Frida、被害者と同じ署名鍵",
+    "claim": "exportedかつ無保護の窓口には届く。非公開化または適切なsignature permissionは到達を止める",
+    "success": "セッションを読み出す、またはroleをadminへ変更する",
+    "observe": "query結果、SecurityException、permission付与状態、roleの変更有無",
+    "residual": "IPC経路を閉じても、同じ資産へ至るファイル取得やプロセス内実行の経路は残る"
+  },
+  "ch3": {
+    "title": "通信を観測・中継できる相手が、認証情報を読み書きできるか",
+    "protect": "サーバへ送るログイン情報",
+    "opponent": "通信を途中で観測・中継できる人",
+    "goal": "HTTPとHTTPSで、途中から見える内容がどう変わるか",
+    "asset": "送信中の認証情報と、接続先サーバの真正性",
+    "property": "機密性・完全性・相手認証",
+    "attacker": "通信経路上でパケットを観測または中継できるon-path攻撃者",
+    "preconditions": "明示プロキシ、攻撃者管理AP、経路機器など、通信を実際に扱える位置にいる",
+    "excluded": "同じWi-Fiにいるだけの端末、サーバ管理者、root、アプリプロセス内実行",
+    "claim": "HTTPは平文を露出する。HTTPSは通常の証明書検証が成功した相手との通信を保護する",
+    "success": "経路上で本文を読む、改変する、または偽サーバとのTLS接続を成立させる",
+    "observe": "プロキシのHTTP本文／TLS handshakeの成否／証明書検証またはpin照合の例外",
+    "residual": "端末・アプリプロセス・正規サーバが侵害された場合は、このネットワーク防御の射程外"
+  },
+  "ch4": {
+    "title": "鍵を取り出せない相手が、その鍵を使って平文へ届くか",
+    "protect": "暗号鍵と、復号したあとの秘密",
+    "opponent": "APKを解析する人、または動作中のアプリへ入り込める人",
+    "goal": "鍵を取り出すことと、取り出さずに使うことの違いを確かめる",
+    "asset": "鍵素材、鍵を使う能力、復号後の平文（3つを別々に判定）",
+    "property": "鍵素材と平文の機密性、鍵使用の認可",
+    "attacker": "APKだけを解析する人／対象アプリのプロセスでコードを実行できる人",
+    "preconditions": "後半は教材用root AVD上のFridaを使う。端末のsecurityLevelは実測する",
+    "excluded": "Keystore・TEE・StrongBox自体の未知の実装脆弱性、認証情報の窃取",
+    "claim": "Android Keystoreは鍵素材を非exportにできるが、認証なし鍵の使用までは拒否しない。認証要求は未認証操作を拒否する",
+    "success": "鍵バイト列を取得する、または鍵を取得せず復号結果を得る",
+    "observe": "getEncoded()、KeyInfo.securityLevel、復号結果、UserNotAuthenticatedException",
+    "residual": "利用者の認証後にアプリへ戻る平文と、その後の処理はプロセス内攻撃者から自動的には守られない"
+  }
+}

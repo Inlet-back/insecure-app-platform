@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第3章 ネットワーク境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
-<script src="learn.js?v=20260922c" defer></script>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+<script src="learn.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -27,20 +27,30 @@
     <strong>準備</strong><br>
     ホスト側でモックサーバを起動しておきます。待ち受けるのは localhost だけで、外部には一切接続しません。
 <pre><code>python3 tools/mockserver/server.py</code></pre>
-    起動時に表示される「公開鍵ピン」は Standard 手順6 で使うので控えておいてください。<br><br>
+    公開鍵ピンはAdvancedで使います。Standardだけ行う場合は控える必要はありません。<br><br>
     証明書は <code>tools/mockserver/</code> に入っている<b>教材専用の使い捨て</b>です。
     秘密鍵ごとリポジトリに入っているので、この教材のループバック以外には絶対に使わないでください。
     作り直すときは <code>tools/mockserver/make-teaching-certs.sh</code> を実行します。
   </div>
 
+  <div data-threat="ch3"></div>
+
+  <div class="callout note short-route">
+    <strong>初めての人の最短ルート</strong><br>
+    BasicでHTTPの本文を確認 → Standard手順4〜5で通常の証明書検証を確認 →
+    章末でHTTPとHTTPSの射程を判定してください。ピンニングはAdvanced扱いで後回しにできます。
+  </div>
+
   <!-- ===================== ① 座学 ===================== -->
-  <div class="primer">
+  <div class="primer" id="primer">
     <h2>この章で触る仕組み</h2>
     <p class="primer-meta">読むだけ・7分。端末の外には、OS の隔離は届きません。</p>
     <p>アプリがサーバと通信するのは、ごく普通のことです。通信を TLS で包み、
     相手の証明書を端末が持つ信頼の一覧と突き合わせ、その方針をアプリが設定ファイルで宣言する、
     というのが普段の守り方です。
     この章で見るのは、その普通の通信で<b>何がどこに置かれ、誰が判断しているのか</b>のほうです。</p>
+    <details class="hint chapter-detail">
+      <summary>仕組みを詳しく読む（図・問答・用語）</summary>
     <figure class="fig">
       <svg viewBox="0 0 720 280" role="img" aria-label="端末とサーバの間に第三者がいる経路と、検証を OS とアプリのどちらが決めているかを示した図">
         <rect class="wall" x="16" y="40" width="150" height="70" rx="6"/>
@@ -100,7 +110,7 @@
       行き着いた起点の CA が trust anchor です。</p>
 
       <p>端末が信じている CA の一覧が<b>トラストストア</b>で、2種類あります。
-      <b>システム証明書</b>は OS に同梱されているもので、ここに足すには root が要ります。
+      <b>システム証明書</b>は OS に同梱・管理されるもので、通常の利用者が任意に追加することはできません。
       <b>ユーザー証明書</b>は利用者が設定画面から後で足せるもので、
       Android 7 以降、アプリは<b>既定ではこちらを信じません</b>。</p>
     </div>
@@ -117,10 +127,11 @@
       <p>もう1つ、通常の検証に<b>上乗せ</b>して、相手の公開鍵のハッシュまで照合する
       <b>公開鍵ピン留め</b>があります。この教材では実体をアプリのコード
       （<code>NetworkActivity.pinningSocketFactory()</code>）に置いていますが、
-      Android が勧めているのは NSC の <code>&lt;pin-set&gt;</code> で宣言するほうです。<br>
+      ピンニングを採用する場合は、手書きTrustManagerより NSC の <code>&lt;pin-set&gt;</code> で宣言するほうが
+      検証順序を誤りにくくなります。ただしAndroid公式は、一般的なアプリへのピンニング自体を推奨していません。<br>
       <b>置き換えではなく上乗せ</b>というのが要点で、
       通常の検証（チェーン・有効期限・発行者）を飛ばしてピンだけを見る実装にすると、
-      期限切れの証明書でも「ピンさえ合えば通る」ようになります。手順7 でそれを確かめます。</p>
+      期限切れの証明書でも「ピンさえ合えば通る」実装になります。この話はAdvancedで扱います。</p>
 
       <p class="who">第1章と第2章では、判定していたのは全部 OS でした。
       この章から<b>アプリの書き方が結果を変えます</b>。
@@ -174,7 +185,7 @@
       <dt>公開鍵ピン留め</dt>
       <dd>通常の証明書検証を通したうえで、さらに相手の公開鍵のハッシュまで一致を要求するやり方です。
         <b>通常の検証の置き換えではありません。</b>
-        置き場所は NSC の <code>&lt;pin-set&gt;</code>（宣言。Android の推奨）か、
+        置き場所は NSC の <code>&lt;pin-set&gt;</code>（宣言）か、
         アプリのコード（この教材の <code>NetworkActivity</code>）です。
         鍵を更新するとピンも変わるので、予備のピンを併記し、
         <code>expiration</code> を切って「アプリを更新できないまま全員が接続不能になる」事故を避けます。
@@ -182,10 +193,11 @@
         運用の失敗で自分のアプリだけが落ちるリスクのほうが大きいことが多いからです。</dd>
     </dl>
     </details>
+    </details>
   </div>
 
   <!-- ===================== ② 判断の分かれ目 ===================== -->
-  <div class="fork">
+  <div class="fork" id="fork">
     <h2>ここに判断の分かれ目がある</h2>
     <ul>
       <li>平文（HTTP）で送るか、TLS で包むか</li>
@@ -250,25 +262,57 @@
       <strong>確認できたこと</strong><br>
       端末の中では OS が守っていた認証情報が、経路上ではそのままの文字列で流れています。
       サーバの画面に出ている <code>username=alice&amp;password=P@ssw0rd123</code> が、それです。
-      同じ Wi-Fi にいる人、経路上のルータ、プロキシ、誰でも読めます。
+      明示プロキシ、攻撃者管理AP、侵害されたルータなど、通信を実際に観測・中継できる相手には読めます。
+    </div>
+
+    <div class="callout note">
+      <strong>サーバログは盗聴の証拠ではありません</strong><br>
+      上の画面は正規の受信先が平文を受け取ったことと、HTTP本文が暗号化されていないことを確認するものです。
+      第三者が取得した証拠ではありません。経路上の攻撃を主張するには、StandardでBurpなどの明示プロキシを通し、
+      <b>プロキシ側に本文が現れること</b>を観測してください。「同じWi-Fiにいるだけ」は本章の攻撃者能力に含めません。
     </div>
 
     <p class="stance">ここで初めて端末の外に出ました。いま立っていたのは <b>通信路にいる人</b> です（<a href="intro-sandbox.html#positions">攻撃者の立場</a>）。端末の中には一歩も入っていません。</p>
 
-    <p><b>Basic はここまで。</b></p>
+    <div class="callout note">
+      <strong>Basicのゴール：見えた場所と、見える攻撃者を区別する</strong><br>
+      次へ進む前に、次の3点を自分の言葉で答えてください。
+      <ol>
+        <li>認証情報は、端末内の保存ファイルではなく、今回はどこに現れましたか。</li>
+        <li>サーバログから「HTTP本文が平文」とは言えますが、「第三者が盗聴した」とも言えますか。</li>
+        <li>第三者による観測を証明するなら、次にどこで本文を見る必要がありますか。</li>
+      </ol>
+      <details class="hint">
+        <summary>答え合わせ</summary>
+        <p>認証情報はHTTPのリクエスト本文として正規サーバへ届きました。
+        サーバログは平文送信の証拠ですが、第三者による盗聴の証拠ではありません。
+        Standardでは明示プロキシを経由させ、<b>プロキシの履歴に本文が現れるか</b>を観測します。</p>
+      </details>
+    </div>
+
+    <p><b>Basic はここまで。</b> StandardではHTTPSへ切り替え、
+    「暗号化されたか」だけでなく「どのCAを信じたか」で結果を読み分けます。</p>
   </section>
 
   <!-- ============================ STANDARD ============================ -->
-  <section class="layer standard">
+  <section class="layer standard" id="standard">
     <h2><span class="layer-tag">Standard</span>HTTPS は何を守っているのか</h2>
     <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
 
-    <div class="learn-step" data-step="ch3-s4"></div>
-    <div class="learn-step" data-step="ch3-s5"></div>
-    <div class="learn-step" data-step="ch3-s6"></div>
+    <div class="callout note">
+      <strong>手を動かす順番</strong><br>
+      ターミナル、アプリ、Burpを同時に見るので、先に役割を固定します。
+      <ol>
+        <li><b>ターミナルA</b>で<code>python3 tools/mockserver/server.py</code>を起動したままにする。</li>
+        <li><b>アプリ</b>で「2. HTTPSで送る」を押し、接続結果とエラー表示を記録する。</li>
+        <li><b>Burp</b>を使える場合は手順5を行い、HTTP historyに本文が出る条件だけを比較する。</li>
+      </ol>
+      必修は手順4までです。Burpを準備できる場合だけ手順5を追加します。
+    </div>
 
     <h3>4. HTTPS で送る</h3>
-    <p><b>「2. HTTPS で送る」</b>を押します。失敗します。</p>
+    <p>アプリで<b>「2. HTTPS で送る」</b>を押します。押す前に、下で結果を予測してください。</p>
+    <div class="learn-step" data-step="ch3-s4"></div>
 <pre class="out"><code>[失敗] SSLHandshakeException
 Trust anchor for certification path not found.</code></pre>
 
@@ -286,26 +330,25 @@ Trust anchor for certification path not found.</code></pre>
     <p>Burp Suite（または手順の証明書）の CA 証明書を端末に入れて、毎回「2. HTTPS で送る」を押します。
     <b>アプリのコードは一切変えません。</b></p>
 
-    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
-<table class="matrix">
-      <tr><th>CA の置き場所</th><th>アプリ設定</th><th>HTTPS を復号できるか</th></tr>
-      <tr><td>入れない</td><td>既定</td><td class="blank">?</td></tr>
-      <tr><td>ユーザー証明書として追加</td><td>既定</td><td class="blank">?</td></tr>
-      <tr><td>ユーザー証明書として追加</td><td>NSC で <code>user</code> を許可</td><td class="blank">?</td></tr>
-      <tr><td>システム証明書として追加（要 root）</td><td>既定</td><td class="blank">?</td></tr>
-    </table>
-<details class="hint"><summary>答え合わせ</summary>
-<table class="matrix">
-      <tr><th>CA の置き場所</th><th>アプリ設定</th><th>HTTPS を復号できるか</th></tr>
-      <tr><td>入れない</td><td>既定</td><td class="ok">できない</td></tr>
-      <tr><td>ユーザー証明書として追加</td><td>既定</td><td class="ok">できない</td></tr>
-      <tr><td>ユーザー証明書として追加</td><td>NSC で <code>user</code> を許可</td><td class="ng">できる</td></tr>
-      <tr><td>システム証明書として追加（要 root）</td><td>既定</td><td class="ng">できる</td></tr>
-    </table>
-</details>
+    <details class="hint">
+      <summary>Burpを使う場合の具体的な操作</summary>
+      <ol>
+        <li>BurpのProxy listenerをホスト側の<code>8081</code>で起動します（モックサーバの<code>8080</code>とは分けます）。</li>
+        <li><code>adb shell settings put global http_proxy 10.0.2.2:8081</code>で、エミュレータの通信をBurpへ向けます。</li>
+        <li>BurpのCAをエミュレータへユーザーCAとして入れます。この時点で「2. HTTPSで送る」を押し、まだ拒否されることを確認します。</li>
+        <li><code>network_security_config.xml</code>の<code>&lt;certificates src="user" /&gt;</code>を有効にし、
+          <code>./gradlew :app:installDebug</code>で入れ直して、同じボタンを押します。</li>
+        <li>BurpのHTTP historyで<code>POST /login</code>を選び、Request本文の
+          <code>username=...&amp;password=...</code>を確認します。</li>
+      </ol>
+      <p>実験後は<code>adb shell settings put global http_proxy :0</code>でプロキシ設定を解除し、
+      NSCのコメントも元に戻してください。</p>
+    </details>
 
-    <p>3行目は <code>app/src/main/res/xml/network_security_config.xml</code> の
-    コメントアウトを外して再ビルドすると再現できます。</p>
+    <div class="learn-step" data-step="ch3-s5"></div>
+
+    <p>続けて比較する場合だけ、<code>network_security_config.xml</code>の
+    <code>&lt;certificates src="user" /&gt;</code>を有効にして再インストールし、同じ操作を繰り返します。</p>
 <pre><code>&lt;trust-anchors&gt;
     &lt;certificates src="system" /&gt;
     &lt;certificates src="user" /&gt;   &lt;!-- ← これを有効にする --&gt;
@@ -322,80 +365,16 @@ Trust anchor for certification path not found.</code></pre>
       まず信頼ストアの話に置き換えて読み直してください。
     </div>
 
-    <h3>6. 止まるはずの攻撃：ピン留め</h3>
-    <p><b>「3. HTTPS + 公開鍵ピン留めで送る」</b>を押します。この経路は2段階で判定します。</p>
-    <ol>
-      <li><b>通常の TLS 検証</b>。アプリに同梱した教材用 CA（<code>res/raw/mockserver_ca.pem</code>）まで
-        チェーンを辿れるか、有効期限は切れていないか、発行者は正しいかを見ます。</li>
-      <li><b>ピンの照合</b>。そのうえで、相手の公開鍵のハッシュが
-        <code>NetworkActivity.expectedPin</code> と一致するかを見ます。</li>
-    </ol>
-    <p>Burp を挟んだ状態だと、提示されるのは Burp が作った証明書なので、<b>①で落ちます</b>。</p>
-<pre class="out"><code>[① 通常の TLS 検証で拒否] チェーンを検証できない
-...
-信頼できる発行者まで辿れていない。ピンの照合はここまで来ていない。</code></pre>
-    <p>Burp を外すと、今度は①を通って②で落ちます。</p>
-<pre class="out"><code>[② ピン不一致で切断]
-期待したピン: AAAAAAAA...
-実際のピン  : E5/ggWvD...=
-通常の TLS 検証は通っている。落ちたのはピンの照合のほう。</code></pre>
-    <p>アプリの <code>NetworkActivity.expectedPin</code> に、モックサーバ起動時に表示された
-    ピン（または上の「実際のピン」）を貼り付けて再ビルドすると、初めて通ります。</p>
-
-    <div class="callout blocked">
-      <strong>これも「OS が守った」ではない</strong><br>
-      ①の材料（どの CA を信じるか）も②の判定も、決めているのは<b>アプリ</b>です。
-      だから Burp の CA を端末に入れても通りません。<br>
-      第1章・第2章では OS が守っていました。ここでは<b>アプリが自分で守っています</b>。
-      守る主体が違う点に注意してください。
-    </div>
-
-    <div class="callout note">
-      <strong>順番を逆にすると、安全な実装ではなくなります</strong><br>
-      ピンだけを照合して通常の検証を飛ばす実装は、教材やブログでよく見かけます。
-      ですがそれは「ピンが一致すること」しか確認しておらず、
-      チェーンも有効期限も発行者も誰も見ていません。<b>次の手順でそれを確かめます。</b><br><br>
-      そもそも手書きするより、NSC に <code>&lt;pin-set&gt;</code> を書くほうが安全です。
-      プラットフォームが通常の検証を済ませてからピンを見るので、順番を間違えようがありません。
-      <code>app/src/main/res/xml/network_security_config.xml</code> にコメントで例を置いてあります。<br><br>
-      <b>そして Android の公式ドキュメントは、一般のアプリにピンニングを推奨していません。</b>
-      サーバの鍵を更新したのにアプリを更新できず、自分のユーザー全員が接続できなくなる、
-      という運用事故のほうが現実的なリスクだからです。
-      入れるなら予備のピンを併記し、<code>expiration</code> を切ってください。
-    </div>
-
-    <div class="learn-step" data-step="ch3-s7"></div>
-
-    <h3>7. ピンは合っているのに、証明書の期限が切れている</h3>
-    <p>モックサーバを期限切れの証明書で起動し直します。
-    <b>サーバの鍵は同じなので、公開鍵ピンは一致したままです。</b></p>
-<pre><code>python3 tools/mockserver/server.py --expired</code></pre>
-<pre class="out"><code>[*] サーバ証明書: server-cert-expired.pem  ← 期限切れ。ピンは一致するが通常の TLS 検証で落ちるはず
-[*] 公開鍵ピン (NetworkActivity.expectedPin に貼る): E5/ggWvD...=</code></pre>
-    <p>アプリは何も変えずに、もう一度ピン留めの経路で送ります。</p>
-<pre class="out"><code>[① 通常の TLS 検証で拒否] 証明書の有効期限切れ
-...
-ピンが一致していても、ここで落ちれば通らない。</code></pre>
-
-    <div class="callout vuln">
-      <strong>ピンは「相手が正しい」ことを意味しません</strong><br>
-      ピンが言えるのは<b>「この公開鍵であること」だけ</b>です。
-      その証明書がいま有効かどうか、信頼できる発行者が出したものかどうかは、
-      別の検証が見ています。<br>
-      <code>checkServerTrusted</code> を空にしてピンだけ見る実装にすると、この行が<b>通ってしまいます</b>。
-      「ピン留めを入れました」という報告を受け取ったら、
-      <b>通常の検証を先に通しているかを必ず聞いてください。</b>
-    </div>
-
-    <p><b>Standard はここまで。</b></p>
+    <p><b>Standard はここまで。</b> HTTPSの成否は「暗号化したか」だけでなく、
+    アプリがどのCAを信頼したかで変わる、と説明できれば十分です。</p>
   </section>
 
   <!-- ============================ DEEP ============================ -->
-  <section class="layer deep">
-    <h2><span class="layer-tag">Deep</span>アプリの防御はアプリの中にある、ということ</h2>
+  <details class="layer deep chapter-detail">
+    <summary><span class="layer-tag">Advanced</span>ピンニングの限界を見る（任意）</summary>
     <p class="layer-meta">任意。Frida を使います。</p>
 
-    <h3>8. ピン留めは外せる</h3>
+    <h3>6. ピン留めは外せる</h3>
     <p>ピン照合をしているのはアプリのコードです。ということは、
     アプリのプロセスに入り込める相手にはその判定を書き換えられます。
     <code>checkServerTrusted</code> を何もしない関数に差し替えれば、ピン留めは無効になります。</p>
@@ -408,35 +387,35 @@ Trust anchor for certification path not found.</code></pre>
       これは第4章の主題そのものです。
     </div>
 
-    <h3>9. では何のためにピン留めするのか</h3>
+    <h3>7. では何のためにピン留めするのか</h3>
     <p>「破れるなら意味がない」ではありません。想定する攻撃者が違います。</p>
     <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
 <table class="matrix">
       <tr><th>攻撃者</th><th>HTTPS のみ</th><th>+ ピン留め</th></tr>
-      <tr><td>同じ Wi-Fi にいる第三者</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>通信を観測・中継できるon-path攻撃者</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>端末に CA を入れられる立場（MDM・保護者・調査者）</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>端末を root 化して Frida を使える相手</td><td class="blank">?</td><td class="blank">?</td></tr>
     </table>
 <details class="hint"><summary>答え合わせ</summary>
 <table class="matrix">
       <tr><th>攻撃者</th><th>HTTPS のみ</th><th>+ ピン留め</th></tr>
-      <tr><td>同じ Wi-Fi にいる第三者</td><td class="ok">防げる</td><td class="ok">防げる</td></tr>
+      <tr><td>通信を観測・中継できるon-path攻撃者</td><td class="ok">防げる</td><td class="ok">防げる</td></tr>
       <tr><td>端末に CA を入れられる立場（MDM・保護者・調査者）</td><td class="ng">防げない</td><td class="ok">防げる</td></tr>
       <tr><td>端末を root 化して Frida を使える相手</td><td class="ng">防げない</td><td class="ng">防げない</td></tr>
     </table>
 </details>
     <p><b>「守れる／守れない」ではなく「誰から守れるか」で書けるようになること。</b></p>
-  </section>
+  </details>
 
   <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
-  <div class="verdict">
+  <div class="verdict" id="verdict">
     <h2>対策は効いたか。どこまで守るか</h2>
     <p>「HTTP をやめて HTTPS にしました」で終わらせません。
     <b>何から守れて、何から守れないのかを判定します。</b>
     HTTPS にした時点で満足してしまうと、ピン留めが何のためにあるのか分からないまま終わります。</p>
     <table class="matrix">
       <tr><th>攻撃者の位置</th><th>HTTP</th><th>HTTPS（既定）</th><th>HTTPS + ピン留め</th></tr>
-      <tr><td>同じ Wi-Fi で覗いているだけ</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>通信を観測・中継できるon-path攻撃者</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>端末にユーザー証明書を入れられる</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>端末が root 化されている</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>アプリのプロセスに Frida を入れられる</td><td class="blank">?</td><td class="blank">?</td><td class="blank">?</td></tr>
@@ -455,13 +434,8 @@ Trust anchor for certification path not found.</code></pre>
   </div>
 
   <h2>章末：手を動かした結果を言葉にする</h2>
-  <p>ここまでで観察は終わりました。ですが観察しただけでは理解になりません。
-  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書きます。書けなければ、まだ分かっていません。</p>
+  <p>最後に、今回の観測から言えることを短く整理します。</p>
 <p><a class="learn-btn" href="explain.html?ch=ch3">説明を書く</a></p>
-
-  <h3>理解を確認する</h3>
-  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
-<p><a class="learn-btn" href="quiz.html?ch=ch3">テストを受ける</a></p>
 
   <details class="hint">
     <summary>説明を書き終えてから開く：到達点の目安</summary>
@@ -477,7 +451,7 @@ Trust anchor for certification path not found.</code></pre>
 
   <div class="pager">
     <a href="chapter2-ipc.html">← 第2章</a>
-    <a href="chapter4-tee.html">第4章 実行環境境界 →</a>
+    <a href="chapter4-tee.html">第4章 Android Keystoreと鍵の使用 →</a>
   </div>
 </main>
 

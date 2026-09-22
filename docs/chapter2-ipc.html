@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第2章 IPC境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
-<script src="learn.js?v=20260922c" defer></script>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+<script src="learn.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -31,13 +31,24 @@
     変わったのは、アプリが自分で窓口を開けたことだけです。
   </div>
 
+  <div data-threat="ch2"></div>
+
+  <div class="callout note short-route">
+    <strong>初めての人の最短ルート</strong><br>
+    Basic手順2で公開Providerを読む → StandardのP3・P4・P4bだけを比べる →
+    章末で <code>exported=false</code> とsignature permissionを判定してください。
+    ActivityとReceiverは同じ境界の発展例です。
+  </div>
+
   <!-- ===================== ① 座学 ===================== -->
-  <div class="primer">
+  <div class="primer" id="primer">
     <h2>この章で触る仕組み</h2>
     <p class="primer-meta">読むだけ・7分。第1章で見た「箱」に、今度は窓口を開ける話です。</p>
     <p>アプリは他のアプリと連携して動きます。写真を選び、共有ボタンで別のアプリに渡す。
       そのために Android が用意しているのがこの章の仕組みで、
       窓口を開けるのは普通の使い方です。決めるのは<b>誰に開けるか</b>のほうです。</p>
+    <details class="hint chapter-detail">
+      <summary>仕組みを詳しく読む（図・問答・用語）</summary>
     <figure class="fig">
       <svg viewBox="0 0 720 270" role="img" aria-label="外からの呼び出しが Binder とシステム側の判定を通ってからアプリのコードに届くことを示した図">
         <rect class="card" x="16" y="60" width="140" height="80" rx="6"/>
@@ -175,10 +186,11 @@
         呼ぶ側は <code>&lt;uses-permission&gt;</code> で要求します。</dd>
     </dl>
     </details>
+    </details>
   </div>
 
   <!-- ===================== ② 判断の分かれ目 ===================== -->
-  <div class="fork">
+  <div class="fork" id="fork">
     <h2>ここに判断の分かれ目がある</h2>
     <p>窓口を1つ作るたびに、作り手は毎回この4つを決めています。</p>
     <ul>
@@ -241,32 +253,68 @@
 Row: 1 key=password, value=P@ssw0rd123</code></pre>
 
     <p class="layer-meta">出てくる行は <code>user_session</code> に保存されている内容そのものです。
-    第1章をまだやっていなければ空になります。手順4 の P7 を実行したあとは <code>role</code> の行が増えます。</p>
+    第1章をまだやっていなければ空になります。</p>
 
     <div class="callout vuln">
       <strong>確認できたこと</strong><br>
       第1章では <code>Permission denied</code> で止められた同じ <code>P@ssw0rd123</code> が、
-      ContentProvider 経由なら誰でも読めてしまいます。ファイルの権限は変えていません。
+      ContentProvider 経由なら、authorityを知り窓口を呼べる別アプリやshellから読めてしまいます。ファイルの権限は変えていません。
       <b>アプリが自分で外に向けた口を開けた</b>だけです。
     </div>
 
-    <p class="stance">立場は第1章と同じ <b>開発者の口（<code>adb shell</code>）</b> のままです。ただし第1章と違って <code>run-as</code> が要りませんでした。<a href="intro-sandbox.html#positions">攻撃者の立場</a> のカードと見比べてください。</p>
+    <p class="stance"><code>adb shell content query</code> は、公開窓口の挙動を観測する教材用プローブです。
+    本章で判定する攻撃者は、脅威ブリーフに置いた<b>別UID・別署名の通常アプリ</b>であり、StandardのP3/P4で同じ結果を確かめます。</p>
 
-    <p><b>Basic はここまで。</b></p>
+    <div class="callout note">
+      <strong>Basicのゴール：ファイル権限を迂回した経路を説明する</strong><br>
+      次へ進む前に、結果を次の3点に分けてください。
+      <ol>
+        <li>外から直接開けたコンポーネントは何でしたか。</li>
+        <li>第1章では読めなかったデータを、今回はどの窓口から読みましたか。</li>
+        <li>この結果だけで、通常の別アプリからも読めると判定できますか。</li>
+      </ol>
+      <details class="hint">
+        <summary>答え合わせ</summary>
+        <p><code>AdminActivity</code>と、公開された<code>SessionProvider</code>が外から到達できました。
+        ファイルを直接読んだのではなく、Providerに被害者アプリ自身の権限で読ませています。
+        ただし今回はshellを観測用に使ったため、通常アプリでも成立することはStandardのP3で確かめます。</p>
+      </details>
+    </div>
+
+    <p><b>Basic はここまで。</b> Standardでは、同じ操作をAttackerアプリから試します。
+    「誰でも使える入口」と「入場券を持つアプリだけが使える入口」で、結果がどう変わるかを比べます。</p>
   </section>
 
   <!-- ============================ STANDARD ============================ -->
-  <section class="layer standard">
+  <section class="layer standard" id="standard">
     <h2><span class="layer-tag">Standard</span>何が窓口を開け、何が閉めているのか</h2>
     <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
 
-    <div class="learn-step" data-step="ch2-s3"></div>
-    <div class="learn-step" data-step="ch2-p3"></div>
-    <div class="learn-step" data-step="ch2-p4"></div>
-    <div class="learn-step" data-step="ch2-p7"></div>
+    <div class="callout note">
+      <strong>最初は、Attackerアプリの3つのボタンだけ試します</strong><br>
+      この章ではアプリを2つ使います。
+      <b>InsecureAppPlatform</b>が調べられる側、<b>Attacker</b>が外からアクセスを試す側です。
+      P3などの名前はAttackerアプリに表示されるボタン番号なので、暗記する必要はありません。
+      Providerは、あるアプリが別のアプリへデータを渡すための<b>データの窓口</b>です。
+      <ol>
+        <li><b>準備：</b>InsecureAppPlatformを開き、第1章の
+          <code>[Basic] ログイン情報を保存する</code>でユーザー名とパスワードを保存します。
+          すでに保存してあれば、やり直さなくて構いません。</li>
+        <li><b>公開設定を比べる：</b>手順3のコマンドを実行し、Androidが拒否する画面を確認します。</li>
+        <li><b>3つのボタンを押す：</b>Attackerアプリを開き、
+          <b>P3「無防備なProviderを読む」→ P4「permissionで守ったProviderを読む」→
+          P4b「permissionが付いたか調べる」</b>の順に押します。</li>
+        <li><b>ボタンの下に出る結果を読む：</b>1つ押すたびに下半分のログを読み、
+          その場の設問で結果を選びます。3つをまとめて押さないでください。</li>
+        <li><b>コードで答え合わせ：</b>3つの結果を記録したあと、手順5のコマンドを実行します。
+          2つの<code>provider</code>設定を並べ、異なる行を自分で探します。</li>
+      </ol>
+      最後に手順5でManifestを開き、結果を変えた1行を確認します。
+    </div>
 
-    <h3>3. 開かない窓口もある</h3>
+    <h3>3. もう1つの画面を外から開いてみる</h3>
 <pre><code>adb shell am start -n com.example.insecureappplatform/.InsecureStorageActivity</code></pre>
+    <div class="learn-step" data-step="ch2-s3"></div>
 <pre class="out"><code>Permission Denial: starting Intent { cmp=com.example.insecureappplatform/.InsecureStorageActivity }
 from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
 
@@ -278,45 +326,16 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
       判定しているのはアプリのコードではなく、<b>ActivityManager（システム側）</b>です。
     </div>
 
-    <h3>4. 攻撃者アプリで一通り試す</h3>
-    <p>Attacker アプリを起動して P3〜P7 を順に押します。</p>
-    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
-<table class="matrix">
-      <tr><th>プローブ</th><th>やること</th><th>結果</th><th>効いているもの</th></tr>
-      <tr><td>P3</td><td>無防備な Provider を読む</td><td class="blank">?</td><td>なし</td></tr>
-      <tr><td>P4</td><td>permission 付き Provider を読む</td><td class="blank">?</td><td>signature permission</td></tr>
-      <tr><td>P4b</td><td>その permission が自分に付与されたか調べる</td><td class="blank">?</td><td>署名の照合</td></tr>
-      <tr><td>P5</td><td>管理画面を起動する</td><td class="blank">?</td><td>なし（exported=true）</td></tr>
-      <tr><td>P6</td><td>非公開画面を起動する</td><td class="blank">?</td><td>exported=false</td></tr>
-      <tr><td>P7</td><td>Broadcast で role を書き換える</td><td class="blank">?</td><td>なし（送信元を確認していない）</td></tr>
-      <tr><td>P7b</td><td>permission 付き Receiver に同じ Intent を投げる</td><td class="blank">?</td><td>signature permission</td></tr>
-    </table>
-<details class="hint"><summary>答え合わせ</summary>
-<table class="matrix">
-      <tr><th>プローブ</th><th>やること</th><th>結果</th><th>効いているもの</th></tr>
-      <tr><td>P3</td><td>無防備な Provider を読む</td><td class="ok">読める</td><td>なし</td></tr>
-      <tr><td>P4</td><td>permission 付き Provider を読む</td><td class="ng">拒否</td><td>signature permission</td></tr>
-      <tr><td>P4b</td><td>その permission が自分に付与されたか調べる</td><td class="ng">要求済みだが未付与</td><td>署名の照合（SIGNATURE_NO_MATCH）</td></tr>
-      <tr><td>P5</td><td>管理画面を起動する</td><td class="ok">開く</td><td>なし（exported=true）</td></tr>
-      <tr><td>P6</td><td>非公開画面を起動する</td><td class="ng">拒否</td><td>exported=false</td></tr>
-      <tr><td>P7</td><td>Broadcast で role を書き換える</td><td class="ok">通る</td><td>なし（送信元を確認していない）</td></tr>
-      <tr><td>P7b</td><td>permission 付き Receiver に同じ Intent を投げる</td><td class="ng">配送されない</td><td>signature permission</td></tr>
-    </table>
-</details>
+    <h3>4. 本編：Providerを攻撃者アプリから比較する</h3>
+    <p>まずAttackerアプリの<b>P3</b>を押し、ボタンの下に出るログを確認します。</p>
+    <div class="learn-step" data-step="ch2-p3"></div>
 
-    <p>P7 のあと、管理画面をもう一度開いて <code>role</code> を見ます。
-    <code>guest</code> だったものが <code>admin</code> になっています。</p>
-<pre><code>adb shell am start -n com.example.insecureappplatform/.AdminActivity</code></pre>
-
-    <div class="callout vuln">
-      <strong>Intent は「外部からの入力」</strong><br>
-      <code>RoleReceiver</code> は <code>intent.getStringExtra("role")</code> をそのまま保存しています。
-      送ってきたのが自分のアプリなのか、まったく別のアプリなのかを確認していません。
-      Web でいえば、リクエストパラメータをそのまま権限として信じているのと同じです。
-    </div>
+    <p>次に<b>P4</b>を押します。P3と同じデータを読む操作ですが、こちらの窓口には入場券が必要です。
+    P4の結果を見たあと、<b>P4b</b>で入場券が実際に付与されたか確認します。</p>
+    <div class="learn-step" data-step="ch2-p4"></div>
 
     <h3>5. Manifest 側で答え合わせをする</h3>
-<pre><code>grep -A3 -E "provider|receiver|AdminActivity" \
+<pre><code>grep -A3 "provider" \
   app/src/main/AndroidManifest.xml</code></pre>
     <p>P3 と P4 の Provider は <b>中身のクラスが同じ</b>（<code>ProtectedSessionProvider</code> は
     <code>SessionProvider</code> をそのまま継承しているだけです）。違いは Manifest の1行だけです。</p>
@@ -336,84 +355,18 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
       チェックしているおかげです。防御はアプリの中ではなく、境界の上にあります。
     </div>
 
-    <h3>6. 差分実験：窓口の締め方を1段ずつ変える</h3>
-    <p><code>app/src/main/AndroidManifest.xml</code> を編集して再ビルド・再インストールし、
-    毎回 P3 を押します。攻撃側は一切変えません。</p>
-<pre><code>./gradlew :app:installDebug</code></pre>
-    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
-<table class="matrix">
-      <tr><th>Manifest の書き方</th><th>P3（他アプリから読む）</th><th>adb content query</th></tr>
-      <tr><td><code>exported="true"</code>（現状）</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td><code>exported="true"</code> + <code>permission</code>(normal)</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td><code>exported="true"</code> + <code>permission</code>(signature)</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td><code>exported="false"</code></td><td class="blank">?</td><td class="blank">?</td></tr>
-    </table>
-<details class="hint"><summary>答え合わせ</summary>
-<table class="matrix">
-      <tr><th>Manifest の書き方</th><th>P3（他アプリから読む）</th><th>adb content query</th></tr>
-      <tr><td><code>exported="true"</code>（現状）</td><td class="ng">読める</td><td class="ng">読める</td></tr>
-      <tr><td><code>exported="true"</code> + <code>permission</code>(normal)</td><td class="ng">攻撃側が宣言すれば読める</td><td class="ng">読める</td></tr>
-      <tr><td><code>exported="true"</code> + <code>permission</code>(signature)</td><td class="ok">読めない</td><td class="ok">読めない</td></tr>
-      <tr><td><code>exported="false"</code></td><td class="ok">読めない</td><td class="ok">読めない</td></tr>
-    </table>
-</details>
-
-    <details class="hint">
-      <summary>ヒント：normal と signature の違いを実験で出すには</summary>
-      <p>攻撃者アプリの Manifest には、すでに
-      <code>&lt;uses-permission android:name="com.example.insecureappplatform.permission.READ_SESSION" /&gt;</code>
-      が書いてあります。P4b を押すと「要求しているが付与されていない」と出ます。<br>
-      ここで被害者側の <code>protectionLevel</code> を <code>normal</code> に変えて再ビルド・再インストールすると、
-      <b>攻撃側を1文字も変えていないのに</b> P4 が通るようになります。
-      <code>signature</code> に戻すとまた止まります。止めているのは<b>署名の一致・不一致</b>です。
-      「permission を付けたから安全」ではなく、<b>どの protectionLevel か</b>で結論が変わります。</p>
-      <p>もう1つの差分実験として、両モジュールを<b>同じ鍵で署名する</b>と、
-      <code>signature</code> のままでも P4 が通ります。
-      <code>signature</code> が守っているのは「他人かどうか」であって「permission を書いたかどうか」ではない、
-      という当たり前のことが、ここで観測できます。</p>
-    </details>
-
-    <h3>7. 直す</h3>
+    <h3>6. 直す</h3>
     <ul>
       <li><code>SessionProvider</code> を <code>exported="false"</code> にする（そもそも公開しない）</li>
       <li>公開が必要なら <code>signature</code> permission を付ける</li>
-      <li><code>AdminActivity</code> を <code>exported="false"</code> にし、画面側でもセッションを確認する</li>
-      <li><code>RoleReceiver</code> は、効く順に
-        (1) 外部公開が要らないなら <code>exported="false"</code>、
-        (2) 公開が要るなら receiver 側に <code>android:permission</code> を要求する
-        （自社アプリ間なら <code>signature</code>）、
-        (3) extras は外部入力なので、権限や認証状態としてそのまま信用しない</li>
     </ul>
-    <div class="callout blocked">
-      <strong>ここで <code>Binder.getCallingUid()</code> は使えません</strong><br>
-      「受け取った側で呼び出し元の UID を見ればよい」という案がよく出ます。
-      ContentProvider や AIDL のように Binder の呼び出しの中で走るコードなら、それは正しいやり方です。
-      ですが <code>BroadcastReceiver.onReceive()</code> は<b>送信側の Binder トランザクションの中では走っていません</b>。
-      ここで <code>Binder.getCallingUid()</code> を呼ぶと、返るのは<b>自分のプロセスの UID</b> であって、
-      ブロードキャストを投げてきた相手の UID ではありません。
-      <b>通ってしまうのに、防げたように見える</b>のがこの案の危ないところです。<br><br>
-      送信元を記録したい場合、API 34 以降なら
-      <code>getSentFromUid()</code> / <code>getSentFromPackage()</code> があります。
-      ただしそれ未満の端末では使えず、システムが送信元情報を持たない経路では意味のある値になりません。
-      <b>到達そのものを止めるのは、上の (1) か (2) の側です。</b>
-      送信元の情報は、止めたあとの記録や二重化として足すものです。
-    </div>
-
-    <p>実際に守った版を並べてあります。<code>ProtectedRoleReceiver</code> は
-    <code>RoleReceiver</code> と同じことをしますが、Manifest で signature permission を要求しています。
-    <b>P7b</b> が、同じ Intent をそちらへ投げるプローブです。</p>
-
-    <div class="learn-step" data-step="ch2-p7b"></div>
-
-    <p>塞いだつもりで塞げていない、というのがこの章で一番起きやすい失敗です。
-    直したら P3〜P7b をもう一度全部押して、結果がどう変わったかまで見てください。</p>
-
-    <p><b>Standard はここまで。</b>「誰がどこでチェックしているのか」を言えれば到達です。</p>
+    <p><b>Standard はここまで。</b>P3とP4の結果を変えたのがManifestの1行であり、
+    判定したのはAndroid側だと説明できれば十分です。</p>
   </section>
 
   <!-- ============================ DEEP ============================ -->
-  <section class="layer deep">
-    <h2><span class="layer-tag">Deep</span>窓口の下を覗く</h2>
+  <details class="layer deep chapter-detail">
+    <summary><span class="layer-tag">Advanced</span>窓口の下を覗く（任意）</summary>
     <p class="layer-meta">任意。</p>
 
     <h3>8. 公開されている入口を全部数える</h3>
@@ -433,10 +386,10 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
       Binder はカーネルドライバなので、その実装自体が攻撃対象になり得ます。
       アプリ層の脆弱性からカーネル層の脆弱性へ話が続くのはこの地点です。本章では扱いません。
     </div>
-  </section>
+  </details>
 
   <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
-  <div class="verdict">
+  <div class="verdict" id="verdict">
     <h2>対策は効いたか。どこまで守るか</h2>
     <p>この章の窓口に対しては、次のような修正案がよく出てきます。
     <b>どれが本当に効くのかを判定するのは、あなたです。</b>
@@ -465,7 +418,7 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
       <code>role</code> に <code>admin</code> 以外を弾いても、攻撃者は <code>admin</code> を送ってきます。
       値の検証は、到達を絞ったあとの二重化としては意味がありますが、単独では防御になりません。</p>
       <p>6つ目は<b>いちばん危ない誤答</b>です。ブロードキャストの受信処理では、
-      <code>Binder.getCallingUid()</code> は送信元の UID を返しません（Standard 手順7 の囲みを参照）。
+      <code>Binder.getCallingUid()</code> は送信元の UID を返さないため、送信元の確認には使えません（Standard 手順7 の囲みを参照）。
       「送信元を確認している」ように見えるコードが書けてしまい、実際には誰でも通ります。
       止めるのは <code>exported</code> か receiver の <code>permission</code> の側です。</p>
     </details>
@@ -474,13 +427,8 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
   </div>
 
   <h2>章末：手を動かした結果を言葉にする</h2>
-  <p>ここまでで観察は終わりました。ただし、観察しただけでは理解になりません。
-  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書いてください。書けなければ、まだ分かっていません。</p>
+  <p>最後に、今回の観測から言えることを短く整理します。</p>
 <p><a class="learn-btn" href="explain.html?ch=ch2">説明を書く</a></p>
-
-  <h3>理解を確認する</h3>
-  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
-<p><a class="learn-btn" href="quiz.html?ch=ch2">テストを受ける</a></p>
 
   <details class="hint">
     <summary>説明を書き終えてから開く：到達点の目安</summary>

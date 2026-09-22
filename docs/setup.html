@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>環境構築 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -140,7 +140,7 @@ adb shell getprop ro.build.version.sdk</code></pre>
   <div class="callout blocked">
     <strong>Google Play 版のイメージを選ばない</strong><br>
     Play ストア入りのイメージは <code>adb root</code> ができません。
-    第1章手順10 以降と第4章 Deep で必要になります。上のコマンドは <code>google_apis</code> 版を指定しています。
+    第1章手順10以降と第4章 Advancedで必要になります。上のコマンドは <code>google_apis</code> 版を指定しています。
   </div>
 
   <p class="done-line"><code>33</code> と返れば、端末の準備は終わりです。初回の起動は数分かかります。</p>
@@ -243,8 +243,8 @@ local properties file at '.../local.properties'</code></pre>
     </div>
   </div>
 
-  <h2 id="s7">7. Frida（Deep 層のみ・任意）</h2>
-  <p>Deep をやらないなら不要です。端末の ABI に合う <code>frida-server</code> を
+  <h2 id="s7">7. Frida（Advancedのみ・任意）</h2>
+  <p>Advancedをやらないなら不要です。端末の ABI に合う <code>frida-server</code> を
   <a href="https://github.com/frida/frida/releases">frida のリリースページ</a>から落とします。
   <span data-os="mac">Apple Silicon の AVD なら <code>arm64</code> です。</span><span data-os="win">Windows の AVD なら <code>x86_64</code> です。</span></p>
 
@@ -316,8 +316,9 @@ frida-ps -Ua | head     # アプリが一覧に出れば準備完了</code></pre
 
   <div class="callout note">
     <strong>記録はどこに残るか</strong><br>
-    予測や説明の記録は、ブラウザの中（localStorage）だけに保存されます。外部には送信しません。
+    通常の予測や説明の記録は、ブラウザの中（localStorage）だけに保存されます。
     <a href="progress.html">記録</a>のページから JSON で書き出せます。
+    研究用イベントは、<a href="study.html">研究参加</a>で明示同意した場合だけ別送信されます。
     記録は<b>ページの URL ごとに別物</b>になります。
   </div>
 

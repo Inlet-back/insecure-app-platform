@@ -28,7 +28,7 @@ object Chapters {
     private const val B1 = "第1章 プロセス境界"
     private const val B2 = "第2章 IPC境界"
     private const val B3 = "第3章 ネットワーク境界"
-    private const val B4 = "第4章 実行環境・TEE境界"
+    private const val B4 = "第4章 Android Keystoreと鍵の使用"
 
     val all: List<Chapter> = listOf(
         Chapter(B1, "ログイン情報を保存する", "MASVS-STORAGE-1", Layer.BASIC, InsecureStorageActivity::class.java),

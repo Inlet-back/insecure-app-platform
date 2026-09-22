@@ -34,6 +34,14 @@ GitHub が自動で付ける **Source code (zip)** と `git clone` は使わな�
 どちらにも署名鍵が入っておらず、配った APK を上書きインストールできません
 （`INSTALL_FAILED_UPDATE_INCOMPATIBLE` で止まります）。
 
+## 研究について
+
+この教材は研究の評価にも使っています。参加は任意で、参加しなくても教材の内容は変わりません。
+
+既定では**どこへも送信しません**。回答も学習の記録もブラウザの中（localStorage）に留まります。
+送信先とその条件は `docs/content/study-config.json` に書いてあり、
+いまは収集が無効（`collection_enabled: false`・送信先が空）です。
+
 ## 中身
 
 | 場所 | 中身 |

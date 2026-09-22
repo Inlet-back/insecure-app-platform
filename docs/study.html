@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研究参加 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+<script src="study.js?v=20260922i" defer></script>
+<script src="study-page.js?v=20260922i" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>研究参加</h1>
+  <p class="subtitle">教材の利用と、研究データの提供は別です</p>
+
+  <div id="study-status" class="callout note">研究への参加は任意です。参加しなくても教材を利用できます。</div>
+
+  <section id="study-consent" hidden>
+    <h2>研究について</h2>
+    <p>この研究は、Androidセキュリティ教材が、攻撃の成立条件と対策の有効範囲を判断する力の学習に役立つかを調べます。</p>
+
+    <h3>収集するもの</h3>
+    <ul>
+      <li>匿名の参加者ID、経験区分、テスト回答と確信度</li>
+      <li>教材内の予測・実測、章の開始・完了、ヒント閲覧、所要時間</li>
+      <li>技術エラーの分類</li>
+    </ul>
+
+    <h3>収集しないもの</h3>
+    <ul>
+      <li>氏名、メールアドレス、教材へ入力したパスワード</li>
+      <li>コマンド出力全文、AIとの会話本文、自由記述の予測理由</li>
+    </ul>
+
+    <p>参加は任意です。同意しなくても教材を利用できます。途中で送信を停止できます。
+    送信済みデータの削除には、下に表示される参加者IDが必要です。</p>
+
+    <dl class="study-terms" id="study-terms" hidden>
+      <div id="study-contact-row"><dt>問い合わせ先</dt><dd id="study-contact"></dd></div>
+      <div id="study-retention-row"><dt>保存期間</dt><dd id="study-retention"></dd></div>
+      <div id="study-ethics-row"><dt>倫理審査</dt><dd id="study-ethics"></dd></div>
+    </dl>
+
+    <div class="study-checks">
+      <label><input type="checkbox" data-consent-check> 研究の目的と行うことを読みました</label>
+      <label><input type="checkbox" data-consent-check> 収集項目と収集しない項目を確認しました</label>
+      <label><input type="checkbox" data-consent-check> 参加が任意で、途中で停止できることを理解しました</label>
+      <label><input type="checkbox" data-consent-check> 研究への参加に同意します</label>
+    </div>
+    <div class="learn-actions">
+      <button class="learn-btn" id="study-agree" disabled>同意して参加者IDを作る</button>
+      <a class="learn-link" href="index.html">研究参加せず教材を使う</a>
+    </div>
+  </section>
+
+  <section id="study-dashboard" hidden>
+    <h2>あなたの参加者ID</h2>
+    <p class="study-id"><code id="study-participant-id"></code></p>
+    <p class="learn-note">遅延テストと撤回に必要です。氏名や学籍番号と一緒に公開しないでください。</p>
+    <div class="learn-actions">
+      <button class="learn-btn" id="study-copy-id">IDをコピー</button>
+    </div>
+
+    <h2>最初に学習前テストへ回答してください</h2>
+    <p>Androidセキュリティの知識を問う試験ではありません。現在の経験と、5つの短い場面で直感に近い答えを選びます。</p>
+    <div class="learn-actions">
+      <a class="learn-btn" id="study-pre" href="#">学習前テストを始める</a>
+    </div>
+
+    <h2>研究の流れ</h2>
+    <ol>
+      <li>学習前テストに回答する</li>
+      <li><a href="intro-sandbox.html">教材を始める</a></li>
+      <li><a id="study-post" href="#">学習直後テスト</a>に回答する</li>
+      <li>約7日後に<a id="study-delayed" href="#">遅延テスト</a>へ回答する</li>
+    </ol>
+
+    <div class="callout note" id="study-queue-status">
+      <strong>送信待ち</strong>
+      <span id="study-queued">0</span>件。オフライン時はこのブラウザに一時保存し、接続後に再送します。
+    </div>
+
+    <h2>参加を停止する</h2>
+    <p>停止後は新しい研究イベントを送信しません。送信済みデータの削除は、参加者IDを添えて研究責任者へ依頼してください。</p>
+    <button class="learn-link" id="study-withdraw">研究参加を停止する</button>
+  </section>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — research participation is optional</footer>
+</body>
+</html>

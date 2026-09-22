@@ -23,12 +23,31 @@ class ContentIntegrityTest {
 
     @Test
     fun `すべての content JSON が構文的に妥当`() {
-        listOf("surface.json", "steps.json", "explain.json", "oracle.json").forEach {
+        listOf("surface.json", "steps.json", "explain.json", "oracle.json", "inquiry.json", "threats.json").forEach {
             // 例外が出なければ妥当
             val text = json(it)
             if (text.trimStart().startsWith("[")) JSONArray(text) else JSONObject(text)
         }
         JSONArray(json("quiz.json"))
+    }
+
+    @Test
+    fun `すべての章が完全な脅威ブリーフを参照する`() {
+        val threats = obj("threats.json")
+        val required = listOf(
+            "title", "protect", "opponent", "goal", "asset", "property", "attacker", "preconditions", "excluded",
+            "claim", "success", "observe", "residual"
+        )
+        (1..4).forEach { n ->
+            val id = "ch$n"
+            assertTrue("$id の脅威ブリーフがない", threats.has(id))
+            val threat = threats.getJSONObject(id)
+            required.forEach { field ->
+                assertTrue("$id.$field が空", threat.optString(field).isNotBlank())
+            }
+            val html = RepoPaths.text("docs/chapter$n-${listOf("process", "ipc", "network", "tee")[n - 1]}.html")
+            assertTrue("$id が脅威ブリーフを参照していない", html.contains("data-threat=\"$id\""))
+        }
     }
 
     @Test
@@ -107,6 +126,29 @@ class ContentIntegrityTest {
     }
 
     @Test
+    fun `steps json の手順は、どこかのページに置かれているか parked と書いてある`() {
+        // 逆向きの検査。ページから参照が消えた手順が黙って残ると、
+        // 記録ページに «到達できないのに永久に未着手» の行として出てしまう。
+        // どこにも置いていない手順は parked を付ける。理由は内部メモに書く。
+        val steps = obj("steps.json")
+        val referenced = RepoPaths.root.resolve("docs").listFiles()
+            .orEmpty()
+            .filter { it.isFile && it.extension == "html" }
+            .flatMap { file ->
+                Regex("""data-step="([^"]+)"""").findAll(file.readText()).map { it.groupValues[1] }
+            }
+            .toSet()
+        steps.keys().forEach { id ->
+            if (id in referenced) return@forEach
+            assertTrue(
+                "step '$id' はどのページからも参照されていない。" +
+                    "本文に戻すか、parked を付けて寝かせること",
+                steps.getJSONObject(id).optBoolean("parked")
+            )
+        }
+    }
+
+    @Test
     fun `steps の予想は ok か ng のどちらか`() {
         val steps = obj("steps.json")
         steps.keys().forEach { id ->
@@ -115,7 +157,7 @@ class ContentIntegrityTest {
                 "$id: answer が ok / ng でない",
                 step.getString("answer") in setOf("ok", "ng")
             )
-            listOf("title", "setup", "question", "why").forEach {
+            listOf("title", "setup", "action", "question", "why").forEach {
                 assertTrue("$id: $it が空", step.getString(it).isNotBlank())
             }
         }
@@ -149,7 +191,7 @@ class ContentIntegrityTest {
             .filter { it.isFile && it.extension in setOf("html", "json", "kt") }
             .filterNot {
                 it.path.contains("/build/") ||
-                    it.path.contains("/docs/_archive/") ||
+                    it.path.contains("/archive/") ||
                     it.name == "ContentIntegrityTest.kt"
             }
             .filter { file ->
@@ -170,7 +212,7 @@ class ContentIntegrityTest {
             .filter { it.isFile && it.extension in setOf("html", "json", "kt") }
             .filterNot {
                 it.path.contains("/build/") ||
-                    it.path.contains("/docs/_archive/") ||
+                    it.path.contains("/archive/") ||
                     it.name == "ContentIntegrityTest.kt"
             }
             .filter { it.readText().contains("MASTG-TEST-0018") }
@@ -189,7 +231,7 @@ class ContentIntegrityTest {
             .filter { it.isFile && it.extension in setOf("html", "json", "kt") }
             .filterNot {
                 it.path.contains("/build/") ||
-                    it.path.contains("/docs/_archive/") ||
+                    it.path.contains("/archive/") ||
                     it.name == "ContentIntegrityTest.kt"
             }
             .forEach { file ->

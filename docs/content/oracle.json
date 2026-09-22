@@ -59,7 +59,7 @@
     "verdict": "no",
     "claim": "診断: AndroidKeyStore を使用しているため、鍵は TEE に保護されています。動的解析による復号は不可能であり、本項目はリスクなしと判定します (No Issue)。",
     "patch": "",
-    "explain": "誤り。2か所ある。(1) Android Keystore の鍵が «常に» TEE で守られるとは限らない。保護レベルは端末次第で、KeyInfo.getSecurityLevel() が SOFTWARE を返す構成もある（エミュレータがそう）。断定するなら、その端末の実測値を添える必要がある。(2) Keystore が守るのは鍵の保持であって使用ではない。第4章 Deep 手順10 で、getEncoded() が null のまま復号に成功した。使用まで縛りたければ setUserAuthenticationRequired のように、条件を Keystore 側に置く。",
+    "explain": "誤り。2か所ある。(1) Android Keystore の鍵が «常に» TEE で守られるとは限らない。保護レベルは端末次第で、KeyInfo.getSecurityLevel() が SOFTWARE を返す構成もある。断定するなら実測値が必要。(2) 鍵素材をexportできないことと、認証なし鍵をアプリとして使えることは別。第4章 AdvancedでgetEncoded()がnullのまま復号に成功する。使用へ条件を付けるならsetUserAuthenticationRequiredなどを使うが、認証後の平文は別途評価する。",
     "how_to_check": "アプリの「鍵がどこにあるか調べる」で KeyInfo.getSecurityLevel() の実測値を見る。そのうえで frida -U -F -l tools/frida/ch4-use-keystore-key.js を実行する。認証なしの鍵は復号結果が出る。"
   },
   {

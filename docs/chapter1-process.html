@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第1章 プロセス境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
-<script src="learn.js?v=20260922c" defer></script>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+<script src="learn.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -31,6 +31,14 @@
     <b>暗号化はどこまで守ってどこから守らないのか</b> を、自分の手で確かめて言えるようになることです。
   </div>
 
+  <div data-threat="ch1"></div>
+
+  <div class="callout note short-route">
+    <strong>初めての人の最短ルート</strong><br>
+    Basic手順1〜3で保存形式を見る → Standard手順4〜8で「誰なら届くか」を比べる →
+    「対策は効いたか」まで進んでください。図・用語とAdvancedは後回しで構いません。
+  </div>
+
   <!-- ===================== ① 座学 ===================== -->
   <div class="primer" id="primer">
     <h2>この章で触る仕組み</h2>
@@ -38,6 +46,8 @@
     <p>アプリが自分のデータを端末に保存するのは、ごく普通のことです。
     ログイン状態、設定、下書き、どれも毎回サーバに聞きに行くわけにはいきません。
     この章で見るのは、その普通の保存がどこに置かれて、<b>そこに誰が手を伸ばせるのか</b>のほうです。</p>
+    <details class="hint chapter-detail">
+      <summary>仕組みを詳しく読む（図・問答・用語）</summary>
     <figure class="fig">
       <svg viewBox="0 0 720 270" role="img" aria-label="アプリのファイルに届くまでに、見えるか・権限があるか・型が許すかの3つを順に通ることを示した図">
         <rect class="plate" x="180" y="40" width="118" height="190" rx="8"/>
@@ -171,6 +181,7 @@
         そのアプリの UID になりすませる開発用の仕組みです。</dd>
     </dl>
     </details>
+    </details>
   </div>
 
   <!-- ===================== ② 判断の分かれ目 ===================== -->
@@ -218,8 +229,8 @@
 
   <!-- ============================ BASIC ============================ -->
   <section class="layer basic">
-    <h2><span class="layer-tag">Basic</span>平文で保存されたものを見る</h2>
-    <p class="layer-meta">所要 30分 / 初学者向け・必修。ここで終わっても第1章は完結します。</p>
+    <h2><span class="layer-tag">Basic</span>保存形式を観察する</h2>
+    <p class="layer-meta">所要 30分 / 初学者向け・必修。<code>run-as</code> は攻撃者の証明ではなく、保存形式を見るための観測手段です。</p>
 
     <h3>1. アプリで保存する</h3>
     <p>アプリを起動し、<code>第1章 プロセス境界 → [Basic] ログイン情報を保存する</code> を開きます。
@@ -237,22 +248,54 @@
 &lt;/map&gt;</code></pre>
 
     <div class="callout vuln">
-      <strong>確認できたこと</strong><br>
-      入力したパスワードがそのままの文字列でファイルに書かれています。
-      暗号化もハッシュ化もされていません。これが MASVS-STORAGE-1 の代表的な失敗です。
+      <strong>この画面だけで分かったこと</strong><br>
+      入力したパスワードが、暗号化されず、そのままファイルに書かれていました。
+      ここまでは画面に出た結果から言えます。<br><br>
+      ただし、いま使った <code>run-as</code> は<b>開発者が教材アプリの中を確認するための特別なコマンド</b>です。
+      たとえるなら、管理用の鍵で部屋を開けて中を見た状態です。
+      そのため、この結果だけでは「ほかの普通のアプリも、このパスワードを読める」とはまだ言えません。<br><br>
+      問題になるのは、バックアップの流出や端末の乗っ取りなどによって、
+      <b>このファイルを手に入れられる相手</b>がいる場合です。
+      誰ならファイルを読めるのかは、次のStandardで確かめます。
     </div>
 
-    <p class="stance">いま立っていたのは <b>開発者の口（<code>adb shell</code>）</b> です。ユーザーが自分で USB デバッグを開けた端末にだけ立てる場所で、一覧は <a href="intro-sandbox.html#positions">攻撃者の立場</a> にあります。</p>
+    <p class="stance">いま使ったのは、USBデバッグを有効にした端末で使える<b>開発者向けの確認方法</b>です。
+    一般のアプリが行った操作ではありません。</p>
 
-    <p><b>Basic はここまでです。</b> 「え、そのまま見えるのか」と思えれば十分です。
-    ただしここで止めて「平文はダメ」とだけ覚えると、この章の意味は半分なくなります。
-    なぜ <code>run-as</code> と書く必要があったのかは Standard で扱います。</p>
+    <div class="callout note">
+      <strong>次へ進む前に、ここだけ確認</strong><br>
+      <ol>
+        <li>パスワードは、ファイルの中で読める文字のままになっていましたか。</li>
+        <li>今回読んだのは、普通のアプリですか。それとも開発者用のコマンドですか。</li>
+        <li>次に確かめたいのは「ほかのアプリからも読めるか」です。</li>
+      </ol>
+      <details class="hint">
+        <summary>答え合わせ</summary>
+        <p>パスワードは読める文字のままでした。ただし、読んだのは開発者用の<code>run-as</code>です。
+        次はAttackerアプリを使い、普通の別アプリからも読めるのかを確かめます。</p>
+      </details>
+    </div>
+
+    <p><b>Basic はここまでです。</b> Standardでは、同じファイルに対して立場だけを変え、
+    「平文であること」と「そこへ到達できること」を分けて判定します。</p>
   </section>
 
   <!-- ============================ STANDARD ============================ -->
-  <section class="layer standard">
+  <section class="layer standard" id="standard">
     <h2><span class="layer-tag">Standard</span>なぜ普段は読めないのかを確かめる</h2>
     <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。この章の本命です。</p>
+
+    <div class="callout note">
+      <strong>手を動かす順番</strong><br>
+      迷ったら、まず次の順で進めてください。コマンドはすべてリポジトリのルートで実行します。
+      <ol>
+        <li>手順4で、結果を先に予測してから表示されたコマンドを実行し、実際の表示を記録する。</li>
+        <li>手順5で、被害者アプリと攻撃者アプリのUIDが異なることを確認する。</li>
+        <li>Attackerアプリを開き、<b>P0 → P1 → P2</b>の順に押す。</li>
+        <li>被害者アプリで暗号化版を保存し、手順7でファイルの見え方を比較する。</li>
+      </ol>
+      見るのは、<b>誰として実行したかと、読めたか</b>の2点だけです。
+    </div>
 
     <div class="callout note">
       <strong>ここから先は、打つ前に予測を書きます</strong><br>
@@ -261,11 +304,9 @@
       どこで誤解していたかが後から見えます。
     </div>
 
-    <div class="learn-step" data-step="ch1-s4"></div>
-    <div class="learn-step" data-step="ch1-p1"></div>
-
     <h3>4. <code>run-as</code> を外して、同じことをする</h3>
 <pre><code>adb shell cat /data/data/com.example.insecureappplatform/shared_prefs/user_session.xml</code></pre>
+    <div class="learn-step" data-step="ch1-s4"></div>
 <pre class="out"><code>cat: /data/data/com.example.insecureappplatform/shared_prefs/user_session.xml: Permission denied</code></pre>
 
     <div class="callout blocked">
@@ -305,22 +346,7 @@ package:com.example.insecureappplatform uid:10175</code></pre>
 ./gradlew :attacker:installDebug</code></pre>
 
     <p>Attacker アプリを起動して、上から順に押します。</p>
-    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
-<table class="matrix">
-      <tr><th>プローブ</th><th>やること</th><th>結果</th></tr>
-      <tr><td>P0</td><td>自分と被害者の UID を比べる</td><td class="blank">?</td></tr>
-      <tr><td>P1</td><td>被害者の shared_prefs を直接読む</td><td class="blank">?</td></tr>
-      <tr><td>P2</td><td>自分の shared_prefs を読む（対照実験）</td><td class="blank">?</td></tr>
-    </table>
-<details class="hint"><summary>答え合わせ</summary>
-<table class="matrix">
-      <tr><th>プローブ</th><th>やること</th><th>結果</th></tr>
-      <tr><td>P0</td><td>自分と被害者の UID を比べる</td><td class="ok">別の UID</td></tr>
-      <tr><td>P1</td><td>被害者の shared_prefs を直接読む</td><td class="ng">OS が拒否（開けない）</td></tr>
-      <tr><td>P2</td><td>自分の shared_prefs を読む（対照実験）</td><td class="ok">読める</td></tr>
-    </table>
-</details>
-
+    <div class="learn-step" data-step="ch1-p1"></div>
     <div class="callout blocked">
       <strong>P1 が失敗するのが正しい</strong><br>
       P1 が赤く出ると、たいていの人はまず自分の書いたコードを疑います。ですが攻撃者アプリのバグではありません。
@@ -346,7 +372,6 @@ package:com.example.insecureappplatform uid:10175</code></pre>
       報告書に書くなら、どの端末のどのバージョンで何が返ったかまで添えてください。
     </div>
 
-    <div data-inquiry="ch1-q1"></div>
 
     <h3>7. 直して、もう一度同じ攻撃をする</h3>
     <p>アプリで <code>[Standard] ログイン情報を保存する (暗号化版)</code> を開いて保存し、手順2 と同じことをします。</p>
@@ -356,56 +381,19 @@ package:com.example.insecureappplatform uid:10175</code></pre>
     &lt;string name="ARZBOa1nGjKq..."&gt;AY9tQ0xk3mSf7Hd2...&lt;/string&gt;
 &lt;/map&gt;</code></pre>
     <p>キーも値も読めなくなりました。使ったのは
-    <code>EncryptedSharedPreferences</code> です（鍵は Android Keystore が保持します）。</p>
-
-    <h3>8. 差分実験：条件を1つずつ変える</h3>
-    <p>ここまでを1枚の表にまとめます。<b>攻撃は毎回同じ</b>で、変えているのは条件だけです。</p>
-    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。</p>
-<table class="matrix">
-      <tr><th>条件</th><th>平文が取れるか</th><th>止めているもの</th></tr>
-      <tr><td>adb shell（そのまま）</td><td class="blank">?</td><td>UID が違う（DAC）</td></tr>
-      <tr><td>adb shell + <code>run-as</code></td><td class="blank">?</td><td>debuggable なアプリのみ許される抜け道</td></tr>
-      <tr><td>他アプリ（攻撃者アプリ）</td><td class="blank">?</td><td>UID が違う（DAC）</td></tr>
-      <tr><td>root (<code>adb root</code>)</td><td class="blank">?</td><td>root には DAC が効かない</td></tr>
-      <tr><td>バックアップやコピーだけを手に入れた（端末は手元にない）</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td>root + EncryptedSharedPreferences</td><td class="blank">?</td><td>ファイルが暗号化されている</td></tr>
-      <tr><td>root + Frida（Deep 手順11）</td><td class="blank">?</td><td class="blank">?</td></tr>
-    </table>
-<details class="hint"><summary>答え合わせ</summary>
-<table class="matrix">
-      <tr><th>条件</th><th>平文が取れるか</th><th>止めているもの</th></tr>
-      <tr><td>adb shell（そのまま）</td><td class="ng">取れない</td><td>UID が違う（DAC）</td></tr>
-      <tr><td>adb shell + <code>run-as</code></td><td class="ok">取れる</td><td>debuggable なアプリのみ許される抜け道</td></tr>
-      <tr><td>他アプリ（攻撃者アプリ）</td><td class="ng">取れない</td><td>UID が違う（DAC）</td></tr>
-      <tr><td>root (<code>adb root</code>)</td><td class="ok">取れる</td><td>root には DAC が効かない</td></tr>
-      <tr><td>バックアップやコピーだけを手に入れた（端末は手元にない）</td><td class="ng">取れない</td><td>復号する鍵は端末の Keystore にあり、ファイルと一緒には出てこない</td></tr>
-      <tr><td>root + EncryptedSharedPreferences</td><td class="ng">取れない</td><td>ファイルが暗号化されている（<b>この行で読むのをやめた場合に限る</b>）</td></tr>
-      <tr><td>root + Frida（Deep 手順11）</td><td class="ok">取れる</td><td class="ng">止められない</td></tr>
-    </table>
-</details>
-
-    <details class="hint">
-      <summary>ヒント：この表から何を読み取るか</summary>
-      <p>「暗号化したから安全」ではなく、<b>攻撃者に何ができるかで結論が変わる</b>ことを読み取ってください。
-      暗号化が効くのは、<b>オフラインで取り出したファイルしか持っていない相手</b>です。
-      バックアップを手に入れただけ、吸い出したデータを渡されただけ、という立場がこれにあたります。</p>
-      <p>一方、<b>動いている端末で root を持っている相手には効きません</b>。
-      下から2行目と最後の行は、同じ root です。違うのは、ファイルを読んで諦めたか、
-      そこからプロセスに入ったかだけです。
-      <b>「root には効きません」と「root でファイルを読んでも中身は出ません」は両立します。</b>
-      前者が最終的な到達可能性、後者がその1経路の話だからです。
-      報告書に書くときは、どちらを言っているのかを明示してください。</p>
-    </details>
+    <code>EncryptedSharedPreferences</code> です（鍵は Android Keystore が保持します）。
+    ただしJetpack Security CryptoとこのAPIは安定版1.1.0で非推奨です。
+    ここでは<b>平文ファイルと端末固有鍵による暗号化の差を比較する歴史的な教材</b>として使っており、
+    新規実装の推奨APIとして紹介しているわけではありません。</p>
 
     <p><b>Standard はここまでです。</b>
-    「アプリの実装ミス」と「OS の保護」が二階建てになっていることを説明できれば到達です。</p>
+    通常の別UIDアプリを止めたのは暗号化ではなく、AndroidのUID分離だと説明できれば到達です。</p>
 
-    <div data-inquiry="ch1-q2"></div>
   </section>
 
   <!-- ============================ DEEP ============================ -->
-  <section class="layer deep">
-    <h2><span class="layer-tag">Deep</span>防御がどこで終わるのかを見る</h2>
+  <details class="layer deep chapter-detail">
+    <summary><span class="layer-tag">Advanced</span>防御がどこで終わるのかを見る（任意）</summary>
     <p class="layer-meta">任意 / ここをやらなくても第1章は完結します。Frida を使います。</p>
 
     <h3>9. ユーザー分離の上にもう一枚ある</h3>
@@ -418,15 +406,14 @@ package:com.example.insecureappplatform uid:10175</code></pre>
     <h3>10. root で読む</h3>
 <pre><code>adb root
 adb shell cat /data/data/com.example.insecureappplatform/shared_prefs/user_session_secure.xml</code></pre>
+    <div class="learn-step" data-step="ch1-s10"></div>
     <p>暗号化されたままで、読めません。<b>ファイルを読み出す経路に対しては、暗号化がちゃんと効いています</b>。
     ただし、ここで止まるかどうかは攻撃者が決めることです。手順11 へ進みます。</p>
-
-    <div class="learn-step" data-step="ch1-s10"></div>
-    <div class="learn-step" data-step="ch1-s11"></div>
 
     <h3>11. アプリの中から読む</h3>
 <pre><code># アプリを前面に出したまま、リポジトリのルートで実行する
 frida -U -F -l tools/frida/ch1-read-encrypted-prefs.js</code></pre>
+    <div class="learn-step" data-step="ch1-s11"></div>
 <pre class="out"><code>=== user_session_secure (復号済み) ===
   username = alice
   password = P@ssw0rd123
@@ -479,7 +466,7 @@ done</code></pre>
       CBC は前のブロックと連鎖するのでそれは消えますが、<b>先頭の IV が毎回同じなら</b>
       同じ平文からは毎回同じ暗号文が出ます。C が直したのは一部だけです。</p>
     </details>
-  </section>
+  </details>
 
   <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
   <div class="verdict" id="verdict">
@@ -492,7 +479,7 @@ done</code></pre>
       <tr><td><code>adb shell</code>（そのまま）</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td><code>run-as</code>（debuggable なアプリ）</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>他アプリ（攻撃者アプリ）</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td>端末を拾って root を取った</td><td class="blank">?</td><td class="blank">?</td></tr>
+      <tr><td>動作中の端末で root / OS 権限を得た</td><td class="blank">?</td><td class="blank">?</td></tr>
       <tr><td>root + 動作中のアプリに Frida</td><td class="blank">?</td><td class="blank">?</td></tr>
     </table>
     <details class="hint">
@@ -501,27 +488,18 @@ done</code></pre>
       <b>アプリのプロセスそのものを取られたら効きません。</b>
       鍵は Keystore にあって取り出せませんが、動いているアプリに
       「その鍵で復号して」と頼ませることはできるからです（Deep 手順11）。</p>
-      <p><b>言い換えると、保存時の暗号化は root 対策ではなく、落とした端末を拾われた場合の対策です。</b>
-      「暗号化したので安全です」という主張は、どちらを想定しているかを言わない限り判定できません。</p>
+      <p><b>言い換えると、保存時の暗号化が直接止めるのは、取得済みファイルだけから平文を読む経路です。</b>
+      ロック中の端末の物理取得にはファイルベース暗号化など別の仕組みも関与し、
+      動作中の侵害端末ではプロセス内実行へ進む経路が残ります。
+      「暗号化したので安全です」という主張は、どの能力を想定しているかを言わない限り判定できません。</p>
     </details>
     <p class="fork-tail">章の冒頭で見た3つの分かれ目に戻ってください。
     「端末に置かない」を選んでいたら、この表はどうなっていたでしょうか。</p>
   </div>
 
-  <div data-inquiry="ch1-q3"></div>
-
   <h2>章末：手を動かした結果を言葉にする</h2>
-  <p>ここまでで観察は終わりました。しかし観察しただけでは理解になりません。
-  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書いてください。書けなければ、まだ分かっていません。</p>
+  <p>最後に、今回の観測から言えることを短く整理します。</p>
 <p><a class="learn-btn" href="explain.html?ch=ch1">説明を書く</a></p>
-
-  <h3>理解を確認する</h3>
-  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
-<p><a class="learn-btn" href="quiz.html?ch=ch1">テストを受ける</a></p>
-
-  <h3>AI の出力を検証する</h3>
-  <p>AI が出した診断と修正案が並んでいます。正しいものと、もっともらしいが誤っているものが混ざっています。<b>実験で確かめて</b>判定してください。ここは「見つける」課題とは違います。</p>
-<p><a class="learn-btn" href="oracle.html?ch=ch1">AI の出力を検証する</a></p>
 
   <details class="hint">
     <summary>説明を書き終えてから開く：到達点の目安</summary>

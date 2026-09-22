@@ -1,6 +1,6 @@
 /* 学習ループ。予測 → 確認 → 説明 → 検証 を1つの画面で回す。
-   記録はブラウザ内 (localStorage) に保存し、書き出しで JSON にできる。
-   外部へは一切送信しない。 */
+   通常の記録はブラウザ内 (localStorage) に保存し、JSONに書き出せる。
+   研究参加へ明示同意した場合だけ、study.jsが自由記述を除く構造化イベントを別に送る。 */
 (() => {
   "use strict";
 
@@ -32,6 +32,9 @@
   }
 
   const now = () => new Date().toISOString().slice(0, 16).replace("T", " ");
+  const studyEvent = (type, fields = {}) => {
+    if (window.InsecureStudy) window.InsecureStudy.record(type, fields);
+  };
   const VERDICT = { ok: "納得した", suspect: "まだ怪しい", checked: "実験で確かめた" };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -46,6 +49,32 @@
       cache[name] = await res.json();
     }
     return cache[name];
+  }
+
+  /* ---------------------------------------------------- 脅威ブリーフ */
+  async function renderThreat(el) {
+    const id = el.dataset.threat;
+    const bank = await content("threats");
+    const t = bank[id];
+    if (!t) { el.innerHTML = `<p>未定義の脅威ブリーフ: ${esc(id)}</p>`; return; }
+    const rows = [
+      ["資産", t.asset], ["守る性質", t.property], ["攻撃者の能力", t.attacker],
+      ["成立の前提", t.preconditions], ["この実験で除外", t.excluded],
+      ["検証する主張", t.claim], ["攻撃成功", t.success],
+      ["観測点", t.observe], ["対策後にも残ること", t.residual],
+    ];
+    el.className = "threat-brief";
+    el.innerHTML = `
+      <div class="threat-head"><span class="learn-tag">今回の実験</span>${esc(t.title)}</div>
+      <dl class="threat-short">
+        <div><dt>守るもの</dt><dd>${esc(t.protect)}</dd></div>
+        <div><dt>相手</dt><dd>${esc(t.opponent)}</dd></div>
+        <div><dt>確かめること</dt><dd>${esc(t.goal)}</dd></div>
+      </dl>
+      <details class="threat-more">
+        <summary>条件を詳しく見る（脅威モデル）</summary>
+        <dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+      </details>`;
   }
 
   /* ---------------------------------------------------- 予測 → 確認 */
@@ -68,13 +97,14 @@
     el.innerHTML = `
       <div class="learn-head"><span class="learn-tag">予測</span>${esc(step.title)}</div>
       <p class="learn-setup">${nl2br(step.setup)}</p>
+      <div class="learn-action"><b>予測を記録したあとに行う操作</b><br>${nl2br(step.action)}</div>
       <p class="learn-q">${esc(step.question)}</p>
       <div class="learn-choice">
         <label><input type="radio" name="g-${id}" value="ok"> 成功する / 通る / 読める</label>
         <label><input type="radio" name="g-${id}" value="ng"> 失敗する / 止められる / 読めない</label>
       </div>
-      <label class="learn-reason">なぜそう思うか（一行でよい。ここが後で効く）
-        <input type="text" id="r-${id}" placeholder="例: UID が違うので読めないはず">
+      <label class="learn-reason">理由（書きたい場合だけでよい）
+        <input type="text" id="r-${id}" placeholder="例: UID が違うので読めないはず（任意）">
       </label>
       <button class="learn-btn" id="b-${id}">予測を記録する</button>
       <p class="learn-note">記録するまで解説は出ません。</p>`;
@@ -82,10 +112,15 @@
       const g = el.querySelector(`input[name="g-${id}"]:checked`);
       const reason = el.querySelector(`#r-${id}`).value.trim();
       if (!g) { alert("成功するか失敗するかを選ぶこと。"); return; }
-      if (!reason) { alert("理由を一行書くこと。ここが後で効いてくる。"); return; }
       const s = store.load();
       s.predictions[id] = { guess: g.value, reason, predicted_at: now(), observed: null };
       store.save(s);
+      studyEvent("prediction_submit", {
+        chapter_id: step.chapter,
+        item_id: id,
+        attempt: 1,
+        response: g.value,
+      });
       renderStep(el);
     });
   }
@@ -94,8 +129,9 @@
     el.className = "learn-step observe";
     el.innerHTML = `
       <div class="learn-head"><span class="learn-tag">確認</span>${esc(step.title)}</div>
-      <p class="learn-mine">あなたの予測: <b>${rec.guess}</b>（${esc(rec.reason)}）</p>
-      <p class="learn-q">実際にコマンドを打って、結果を入れる。</p>
+      <p class="learn-mine">あなたの予測: <b>${rec.guess}</b>${rec.reason ? `（${esc(rec.reason)}）` : ""}</p>
+      <div class="learn-action"><b>いま行う操作</b><br>${nl2br(step.action)}</div>
+      <p class="learn-q">上の操作を行い、実際の結果を選ぶ。</p>
       <div class="learn-actions">
         <button class="learn-btn" data-a="ok">成功した</button>
         <button class="learn-btn" data-a="ng">失敗した / 止められた</button>
@@ -108,6 +144,13 @@
         r.observed_at = now();
         r.matched = (r.observed === r.guess);
         store.save(s);
+        studyEvent("observation_submit", {
+          chapter_id: step.chapter,
+          item_id: id,
+          attempt: 1,
+          response: r.observed,
+          metadata: { matched: r.matched, expected: step.answer },
+        });
         renderStep(el);
       }));
   }
@@ -121,7 +164,7 @@
         <span class="learn-tag">${matched ? "予測どおり" : "予測を外した"}</span>${esc(step.title)}
       </div>
       <table class="learn-table">
-        <tr><th>あなたの予測</th><td>${rec.guess}　（${esc(rec.reason)}）</td></tr>
+        <tr><th>あなたの予測</th><td>${rec.guess}${rec.reason ? `　（${esc(rec.reason)}）` : ""}</td></tr>
         <tr><th>実際の結果</th><td>${rec.observed}</td></tr>
         <tr><th>正解</th><td>${step.answer}</td></tr>
       </table>
@@ -168,7 +211,11 @@
           </select>
         </label>
         <button class="learn-btn" id="quiz-start">開始する</button>`;
-      el.querySelector("#quiz-start").addEventListener("click", () => { i = 0; question(); });
+      el.querySelector("#quiz-start").addEventListener("click", () => {
+        studyEvent("practice_quiz_start", { item_id: ch, metadata: { practice_phase: phase() } });
+        i = 0;
+        question();
+      });
     }
 
     function question() {
@@ -198,6 +245,12 @@
         id: q.id, choice: unknown ? "x" : labels[idx], correct,
         misconception: unknown ? "unknown" : q.options[idx].tag,
       });
+      studyEvent("practice_quiz_answer", {
+        chapter_id: q.chapter,
+        item_id: q.id,
+        response: unknown ? "unknown" : labels[idx],
+        metadata: { matched: correct, practice_phase: phase() },
+      });
       el.innerHTML = `
         <div class="learn-head">
           <span class="learn-tag">${correct ? "正解" : "不正解"}</span>${esc(q.id)}
@@ -218,6 +271,10 @@
       const s = store.load();
       s.quiz.push({ chapter: ch, phase: phase(), at: now(), score, total: items.length, results: answers });
       store.save(s);
+      studyEvent("practice_quiz_complete", {
+        item_id: ch,
+        metadata: { practice_phase: phase(), score, total: items.length },
+      });
       el.innerHTML = `
         <div class="learn-head"><span class="learn-tag">結果</span>${score} / ${items.length}</div>
         ${tags.length ? `<div class="learn-misc"><b>残っている誤解</b><ul>
@@ -435,7 +492,7 @@ ${teach}`;
 
       <div class="inq-stage">
         <p class="inq-lead"><span class="inq-num">1</span>まず自分で答える</p>
-        <label class="inq-label" for="t-${id}">これを知らない人に説明するなら</label>
+        <label class="inq-label" for="t-${id}">${esc(item.answer_format || "結論と根拠を分けて答える")}</label>
         <textarea id="t-${id}" rows="4" placeholder="うまく書けなくて構いません。書けなかったところが、そのまま次に聞くことになります。">${esc(rec.teach || "")}</textarea>
         <p class="learn-note">観点: ${esc(item.teach_hint)}</p>
         <div class="learn-actions">
@@ -532,11 +589,13 @@ ${teach}`;
           break;
         case "copy-ask":
           persist();
+          studyEvent("ai_prompt_copy", { item_id: id, response: "ask" });
           copyToClipboard(askPrompt(item, teach), b);
           break;
         case "copy-teach":
           if (!teach) { alert("先に自分の説明を書くこと。教える中身がないと、この段は意味がない。"); return; }
           persist();
+          studyEvent("ai_prompt_copy", { item_id: id, response: "teach" });
           copyToClipboard(teachPrompt(item, teach), b);
           break;
         case "goto": {
@@ -631,15 +690,14 @@ ${teach}`;
             ? `<label class="off"><input type="checkbox" disabled> ${esc(p.short)}<span class="sf-na">対象外</span></label>`
             : `<label><input type="checkbox" value="${p.id}"> ${esc(p.short)}</label>`).join("")}
         </div>
-        <label class="learn-reason">いちばん危ないと思った立場と、その理由（一行）
-          <input type="text" placeholder="例: adb shell。run-as で中に入れるので">
+        <label class="learn-reason">いちばん危ないと思った立場と、その理由（書きたい場合だけでよい）
+          <input type="text" placeholder="例: adb shell。run-as で中に入れるので（任意）">
         </label>
         <button class="learn-btn">この行を確定する</button>
         <p class="learn-note">確定するまで答えは出ません。</p>`;
       box.querySelector("button").addEventListener("click", () => {
         const picked = [...box.querySelectorAll('input[type="checkbox"]:checked')].map((c) => c.value);
         const reason = box.querySelector('input[type="text"]').value.trim();
-        if (!reason) { alert("理由を一行書くこと。どの立場を怖いと思ったかが、後で効いてくる。"); return; }
         if (!picked.length &&
             !confirm("1つも選ばずに確定する。「どの立場からも届かない」という答えでよいか。")) return;
         save(asset.id, { picked, reason, at: now() });
@@ -674,7 +732,7 @@ ${teach}`;
               <td class="sf-why">${esc(asset.cells[p.id] || "")}</td></tr>`;
           }).join("")}
         </table>
-        <p class="learn-mine">あなたの見立て: ${esc(rec.reason)}</p>
+        ${rec.reason ? `<p class="learn-mine">あなたの見立て: ${esc(rec.reason)}</p>` : ""}
         <div class="learn-why">${nl2br(pointOf(asset))}</div>
         <button class="learn-link">この行をやり直す</button>`;
       box.querySelector("button").addEventListener("click", () => {
@@ -743,6 +801,9 @@ ${teach}`;
 
     const byChapter = {};
     Object.entries(steps).forEach(([id, st]) => {
+      // parked はどのページにも置いていない手順。並べると、到達できないのに
+      // 永久に未着手のままの行が残る
+      if (st.parked) return;
       (byChapter[st.chapter] = byChapter[st.chapter] || []).push([id, st]);
     });
 
@@ -804,7 +865,7 @@ ${teach}`;
         外したところを説明できるようになったかが本題。</p>` : "<p>まだ記録がない。</p>"}
       ${missed.length ? `<h3>外した手順（＝誤解が表に出た場所）</h3><ul>${missed.map(([id, r]) =>
         `<li><code>${esc(id)}</code> ${esc(steps[id].title)}<br>
-         <span class="learn-note">予測 ${r.guess} — ${esc(r.reason)}</span></li>`).join("")}</ul>` : ""}
+         <span class="learn-note">予測 ${r.guess}${r.reason ? ` — ${esc(r.reason)}` : ""}</span></li>`).join("")}</ul>` : ""}
 
       <h2>概念テスト</h2>
       ${s.quiz.length ? `<table class="matrix"><tr><th>日時</th><th>範囲</th><th>種類</th><th>点</th></tr>
@@ -861,7 +922,8 @@ ${teach}`;
         : "<p>まだ記録がない。</p>"}
 
       <h2>記録の持ち出し</h2>
-      <p>記録はこのブラウザの中だけにあります。外部には送信していません。</p>
+      <p>このページに表示する学習記録はブラウザ内だけにあります。研究参加に同意した場合の
+      構造化イベントは別管理です。状態の確認・停止は<a href="study.html">研究参加</a>から行えます。</p>
       <div class="learn-actions">
         <button class="learn-btn" id="p-export">JSON を書き出す</button>
         <button class="learn-btn" id="p-import">JSON を読み込む</button>
@@ -912,6 +974,7 @@ ${teach}`;
     });
 
   document.addEventListener("DOMContentLoaded", () => {
+    mount("[data-threat]", renderThreat);
     mount("[data-step]", renderStep);
     mount("[data-quiz]", renderQuiz);
     mount("[data-oracle]", renderOracle);

@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第4章 実行環境境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
-<script src="learn.js?v=20260922c" defer></script>
+<title>第4章 Android Keystoreと鍵の使用 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+<script src="learn.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
 
 <main>
-  <h1>第4章 — 実行環境境界</h1>
-  <p class="subtitle">箱ごと壊されたら何が残るのか</p>
+  <h1>第4章 — Android Keystoreと鍵の使用</h1>
+  <p class="subtitle">鍵素材・鍵を使う能力・復号後の平文を分けて考える</p>
 
   <div class="badges">
     <span class="badge masvs">MASVS-CRYPTO-1</span>
@@ -31,8 +31,16 @@
     守れるとしたら、それは何をどこまで守っているのでしょうか。
   </div>
 
+  <div data-threat="ch4"></div>
+
+  <div class="callout note short-route">
+    <strong>初めての人の最短ルート</strong><br>
+    Basic手順1〜3でAPK内の固定鍵を確認 → Standard手順5〜7でKeystoreとの差を見る →
+    章末で「鍵素材」と「鍵の使用」を別々に判定してください。Fridaと認証要求はAdvancedです。
+  </div>
+
   <!-- ===================== ① 座学 ===================== -->
-  <div class="primer">
+  <div class="primer" id="primer">
     <h2>この章で触る仕組み</h2>
     <p class="primer-meta">読むだけ・7分。端末の持ち主自身が敵になる場合の話です。</p>
     <p>端末にデータを残すとき、ログイン用のトークンやメモのように、そのままでは置きたくないものがあります。
@@ -41,6 +49,8 @@
       ごく普通の仕組みです。端末によっては、その先で
       OS から隔離された実行環境（TEE）や専用チップ（StrongBox）が使われます。
       <b>使われるかどうかは端末次第なので、この章では実測値を表示して確かめます。</b></p>
+    <details class="hint chapter-detail">
+      <summary>仕組みを詳しく読む（図・問答・用語）</summary>
     <figure class="fig">
       <svg viewBox="0 0 720 300" role="img" aria-label="アプリのプロセスから Keystore への3つの依頼のうち、鍵の持ち出しだけが止まることを示した図">
         <rect class="plate" x="16" y="40" width="290" height="230" rx="8"/>
@@ -175,10 +185,11 @@
         2つは別の観測であって、片方からもう片方は導けません。</dd>
     </dl>
     </details>
+    </details>
   </div>
 
   <!-- ===================== ② 判断の分かれ目 ===================== -->
-  <div class="fork">
+  <div class="fork" id="fork">
     <h2>ここに判断の分かれ目がある</h2>
     <ul>
       <li>鍵をコードに書くか、Keystore に生成させるか</li>
@@ -234,6 +245,7 @@
 <pre><code>adb shell pm path com.example.insecureappplatform</code></pre>
 <pre class="out"><code>package:/data/app/~~xxxx==/com.example.insecureappplatform-yyyy==/base.apk</code></pre>
     <p>この長いパスは端末ごとに違うので、打ち写さず、そのまま取り出します。</p>
+    <div class="learn-step" data-step="ch4-s2"></div>
 <pre><code>adb pull "$(adb shell pm path com.example.insecureappplatform | sed 's/package://' | tr -d '\r')" base.apk
 unzip -p base.apk 'classes*.dex' | strings | grep -iE "1234567890abcdef|AES/ECB"</code></pre>
 <pre class="out"><code>1234567890abcdef
@@ -251,29 +263,42 @@ AES/ECB/PKCS5Padding</code></pre>
       <b>APK は攻撃者の手元にあるファイルにすぎません。</b>
     </div>
 
-    <h3>4. おまけ：同じ文字列を2回暗号化してみる</h3>
-    <p>同じ平文を2回入れると、<code>AES/ECB/PKCS5Padding</code> なのでまったく同じ暗号文が出ます。
-    中身を復号できなくても「前と同じものを送った」ことは分かってしまいます。</p>
-
     <p class="stance">いま立っていたのは <b>APK だけ持っている人</b> です（<a href="intro-sandbox.html#positions">攻撃者の立場</a>）。端末にも通信路にも触れていないのに、鍵が手に入りました。</p>
 
-    <p><b>Basic はここまで。</b></p>
+    <div class="callout note">
+      <strong>Basicで確認したこと</strong><br>
+      APKには固定鍵と復号に必要な情報が入っていたため、端末へ触れずに復号できました。
+      Standardでは暗号方式を増やさず、<b>鍵の置き場所</b>だけをKeystoreへ変えます。
+    </div>
+
+    <p><b>Basic はここまで。</b> Standardでは同じ端末・同じアプリで鍵の置き場所だけを変え、
+    APK解析と端末上の観測結果がどう変わるかを確かめます。</p>
   </section>
 
   <!-- ============================ STANDARD ============================ -->
-  <section class="layer standard">
+  <section class="layer standard" id="standard">
     <h2><span class="layer-tag">Standard</span>鍵をアプリの外に出す</h2>
     <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
 
-    <div class="learn-step" data-step="ch4-s2"></div>
-    <div class="learn-step" data-step="ch4-s6"></div>
+    <div class="callout note">
+      <strong>手を動かす順番</strong><br>
+      Basicで作った<code>base.apk</code>をそのまま使い、次の順で比較します。
+      <ol>
+        <li>被害者アプリで<code>[Standard] 文字列を暗号化する (Keystore)</code>を開き、文字列を入力して
+          <b>「Keystoreの鍵で暗号化」</b>を押す。</li>
+        <li>手順6の<code>unzip | strings | grep</code>を実行し、出力された文字列をそのまま控える。</li>
+        <li>アプリへ戻り、<b>「鍵がどこにあるか調べる」</b>を押して、実装方式を確認する。</li>
+      </ol>
+      このStandardで判定するのは、<b>鍵が見つかるか／鍵を使えるか／平文へ届くか</b>の3つです。
+    </div>
 
     <h3>5. Keystore 版で暗号化する</h3>
     <p><code>[Standard] 文字列を暗号化する (Keystore)</code> を開いて暗号化します。
     <code>CryptoActivity</code> との違いは<b>鍵の置き場所だけ</b>であって、暗号アルゴリズムの話ではありません。</p>
 
-    <h3>6. APK を探しても鍵がない</h3>
+    <h3>6. APK の中を同じ方法で探す</h3>
 <pre><code>unzip -p base.apk 'classes*.dex' | strings | grep -i "tee_demo_key"</code></pre>
+    <div class="learn-step" data-step="ch4-s6"></div>
     <p>出てくるのは<b>鍵の名前（alias）だけ</b>で、鍵そのものは入っていません。
     鍵は生成された瞬間から Keystore の中にあり、アプリのコードにも変数にも現れません。</p>
 
@@ -296,57 +321,21 @@ TEE や StrongBox にあるとは限らない。エミュレータでは SOFTWAR
       違うのは、OS のカーネルごと破られたときに耐えられるかどうかです。
       だから「Keystore を使っているので鍵は TEE で保護されています」という診断文は、
       <b>この画面の実測値を添えない限り、根拠のない断定</b>になります。
-      自分の端末で何が出たかを控えておいてください。
+      表示された値を見て、実装方式を勝手にTEEと決めつけないことが重要です。
     </div>
-
-    <h3>8. root で鍵を探す</h3>
-<pre><code>adb root
-adb shell ls -l /data/misc/keystore/</code></pre>
-    <p>ファイルはありますが、これは鍵そのものではありません。
-    <code>TRUSTED_ENVIRONMENT</code> や <code>STRONGBOX</code> の端末では、鍵の素材は
-    Android 側から見えない領域にあり、鍵で「計算してもらう」ことしかできません。
-    <code>SOFTWARE</code> の端末では、鍵は OS の中のソフトウェアが守っています。
-    <b>どこまで耐えるかはその違いで変わります。</b>
-    この教材では、そこまでは確かめていません。</p>
-
-    <h3>9. 差分実験：鍵の置き場所 × 攻撃者の位置</h3>
-    <p class="fill-in">下の表を<b>答えを見ずに埋めてから</b>開いてください。埋められない行があれば、その手順をもう一度やります。
-    正直なところ、この表を自力で埋められるかどうかが、この章を分かったかどうかの境目だと思っています。</p>
-<table class="matrix">
-      <tr><th>攻撃者の位置</th><th>ハードコード鍵</th><th>Keystore の鍵</th></tr>
-      <tr><td>APK を手に入れた（静的解析）</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td>端末のファイルを取れる（root）</td><td class="blank">?</td><td class="blank">?</td></tr>
-      <tr><td>アプリのプロセスに入れる（Frida）</td><td class="blank">?</td><td class="blank">?</td></tr>
-    </table>
-<details class="hint"><summary>答え合わせ</summary>
-<table class="matrix">
-      <tr><th>攻撃者の位置</th><th>ハードコード鍵</th><th>Keystore の鍵</th></tr>
-      <tr><td>APK を手に入れた（静的解析）</td><td class="ng">鍵が取れる</td><td class="ok">取れない</td></tr>
-      <tr><td>端末のファイルを取れる（root、ファイルを読むだけ）</td><td class="ng">鍵が取れる</td><td class="ok">取れない</td></tr>
-      <tr><td>アプリのプロセスに入れる（Frida）</td><td class="ng">鍵が取れる</td><td class="ng">鍵は取れないが<b>使える</b></td></tr>
-    </table>
-</details>
-
-    <p>右下のマスが第4章の本題です。<b>「取れない」と「使えない」は違います。</b></p>
-
-    <p class="learn-note">2行目と3行目は、どちらも root を取った相手でも起こりえます。
-    違うのは、ファイルを読んで終わったか、そこからプロセスに入ったかだけです。
-    <b>「root には取れません」とだけ書くと、3行目が消えます。</b></p>
-
-    <p><b>Standard はここまで。</b></p>
+    <p><b>Standard はここまで。</b> 固定鍵はAPKから取得でき、Keystore版ではaliasしか見つからない、
+    という差を説明できれば十分です。「鍵を取り出せなくても使えるか」はAdvancedで確かめます。</p>
   </section>
 
   <!-- ============================ DEEP ============================ -->
-  <section class="layer deep">
-    <h2><span class="layer-tag">Deep</span>鍵の「保持」と「使用」を分けて考える</h2>
+  <details class="layer deep chapter-detail">
+    <summary><span class="layer-tag">Advanced</span>鍵の「保持」と「使用」を分けて考える（任意）</summary>
     <p class="layer-meta">任意。Frida を使います。</p>
-
-    <div class="learn-step" data-step="ch4-s10"></div>
-    <div class="learn-step" data-step="ch4-s11"></div>
 
     <h3>10. 鍵を取り出さずに使う</h3>
 <pre><code># Keystore 画面を前面に出したまま、リポジトリのルートで実行する
 frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
+    <div class="learn-step" data-step="ch4-s10"></div>
 <pre class="out"><code>[*] 鍵ハンドルを取得: android.security.keystore2.AndroidKeyStoreSecretKey
 [*] 鍵の中身 getEncoded() = null  ← null なら取り出せていない
 [*] 復号結果 = himitsu-no-memo
@@ -356,7 +345,8 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
       <strong>この章の山場</strong><br>
       <code>getEncoded()</code> が <code>null</code> を返したことが、鍵を取り出せていない証拠です。
       それでも <code>himitsu-no-memo</code> は手に入りました。
-      Android Keystore が守るのは<b>鍵の保持</b>であって<b>鍵の使用</b>ではないからで、
+        Android Keystore の認証なし鍵が直接守るのは<b>鍵素材の非export性</b>であり、
+      そのアプリに許された<b>鍵の使用</b>まで拒否するものではないからで、
       使用の可否を決めているのは「そのアプリとして動けるか」、つまりプロセスの話であり、
       第1章の話に戻ってきます。
     </div>
@@ -391,12 +381,13 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
     認証の通った <code>Cipher</code> だけが返ってきます。今度は復号できます。</p>
     <p>同じことを Frida からもやります。手順10 のスクリプトは2本の鍵を順に試すので、
     認証なしの鍵は通り、認証つきの鍵は断られます。</p>
+    <div class="learn-step" data-step="ch4-s11"></div>
 
     <div class="callout blocked">
       <strong>何が変わったのか</strong><br>
       Frida は相変わらずプロセスの中にいます。それでも失敗するのは、
       鍵を使ってよいかを判定しているのがアプリのコードではなく<b>Keystore の側</b>だからです。
-      アプリの中に書いた条件は飛ばせても、鍵の使用条件は飛ばせません。
+      この端末・この鍵設定では、認証されていない暗号操作をKeystoreが拒否しました。
     </div>
 
     <div class="callout note">
@@ -441,10 +432,10 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
     <p>共通しているのは、<b>判定をクライアントの外に出している</b>という一点です。
     クライアント側の判定は、クライアントを支配した相手には効かないので、
     第3章のピン留めと同じ結論に戻ってきます。</p>
-  </section>
+  </details>
 
   <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
-  <div class="verdict">
+  <div class="verdict" id="verdict">
     <h2>対策は効いたか。どこまで守るか</h2>
     <p>この章の冒頭で挙げた3つ目の分かれ目、<b>何から守るつもりなのか</b>に戻ります。
     同じ「暗号化しました」でも、想定する相手が違えば判定が変わります。</p>
@@ -461,8 +452,8 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
     ロック中の端末を拾っただけの相手は、まだどの列にも立てていません。</p>
     <details class="hint">
       <summary>判定</summary>
-      <p>Keystore が守るのは <b>鍵そのものの流出</b>で、手順10 で <code>getEncoded()</code> が
-      <code>null</code> を返したとおり、取り出せないのは本当です。
+      <p>Keystore が直接示したのは <b>鍵素材をこのAPIからexportできないこと</b>で、手順10では
+      <code>getEncoded()</code> が <code>null</code> を返しました。
       それでも、動いているアプリに「その鍵で復号して」と頼ませることはできてしまいます。
       <b>取り出せない ≠ 使えない。</b></p>
       <p>だから <code>setUserAuthenticationRequired</code> が意味を持ちます。
@@ -483,18 +474,8 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
   </div>
 
   <h2>章末：手を動かした結果を言葉にする</h2>
-  <p>ここまでで観察は終わりましたが、観察しただけでは理解になりません。
-  鍵が抜けた・抜けなかったという結果だけを持ち帰ると、次に別の端末を渡されたときに何も言えません。
-  <b>教材の言い回しをなぞらず、自分の言葉で</b>説明を書いてください。書けなければ、まだ分かっていません。</p>
+  <p>最後に、今回の観測から言えることを短く整理します。</p>
 <p><a class="learn-btn" href="explain.html?ch=ch4">説明を書く</a></p>
-
-  <h3>理解を確認する</h3>
-  <p>選択肢には、実際によくある誤解が仕込んであります。間違えた設問は、その場でどこをやり直せばよいかが出ます。</p>
-<p><a class="learn-btn" href="quiz.html?ch=ch4">テストを受ける</a></p>
-
-  <h3>AI の出力を検証する</h3>
-  <p>AI が出した診断と修正案が並んでいて、正しいものと、もっともらしいけれど誤っているものが混ざっています。<b>実験で確かめて</b>判定してください。「見つける」課題ではありません。</p>
-<p><a class="learn-btn" href="oracle.html?ch=ch4">AI の出力を検証する</a></p>
 
   <details class="hint">
     <summary>説明を書き終えてから開く：到達点の目安</summary>

@@ -154,7 +154,7 @@
     ]
   },
   "ch4": {
-    "title": "実行環境境界（Android Keystore）",
+    "title": "Android Keystoreと鍵の使用",
     "intro": "この章の結論は、他の3章の結論を束ねる位置にある。",
     "questions": [
       {

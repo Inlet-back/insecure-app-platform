@@ -40,7 +40,7 @@ APKSIGNER=$(find_apksigner)
 
 cert_sha256() { # $1 = apk
   "$APKSIGNER" verify --print-certs "$1" 2>/dev/null \
-    | awk -F': ' '/certificate SHA-256 digest/ { print $2; exit }'
+    | awk -F': ' '/certificate SHA-256 digest/ { print $NF; exit }'
 }
 
 APP_SHA=$(cert_sha256 "$APP_APK")

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>5分クイックチェック | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922c">
-<script src="nav.js?v=20260922c" defer></script>
-<script src="ui.js?v=20260922c" defer></script>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -43,7 +43,7 @@ nc -l 8080</code></pre>
   <code>POST /login</code> と <code>username=...&amp;password=...</code> がそのまま出れば確認完了。
   → <a href="chapter3-network.html">第3章へ</a></p>
 
-  <h2>4. 実行環境境界 — 鍵を拾う</h2>
+  <h2>4. Android Keystoreと鍵の使用 — 鍵を拾う</h2>
 <pre><code>adb shell pm path com.example.insecureappplatform
 adb pull /data/app/.../base.apk
 unzip -p base.apk 'classes*.dex' | strings | grep -iE "1234567890abcdef|AES/ECB"</code></pre>
@@ -55,7 +55,7 @@ unzip -p base.apk 'classes*.dex' | strings | grep -iE "1234567890abcdef|AES/ECB"
     <tr><td>1. プロセス</td><td>1</td><td>&lt; 1分</td></tr>
     <tr><td>2. IPC</td><td>2</td><td>約1分</td></tr>
     <tr><td>3. ネットワーク</td><td>1 (+ アプリ操作)</td><td>約1分</td></tr>
-    <tr><td>4. 実行環境</td><td>3</td><td>約2分</td></tr>
+    <tr><td>4. 鍵の使用</td><td>3</td><td>約2分</td></tr>
   </table>
 
   <div class="callout note">

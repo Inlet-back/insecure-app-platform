@@ -121,7 +121,7 @@
             android:exported="false"
             android:label="送信" />
 
-        <!-- 第4章: 実行環境 / TEE 境界 -->
+        <!-- 第4章: Android Keystore と鍵の使用 -->
         <activity
             android:name=".CryptoActivity"
             android:exported="false"

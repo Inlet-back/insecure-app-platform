@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "study_id": "insecureappplatform-pilot",
+  "content_version": "2026-09-pilot-2",
+  "consent_version": "draft-2026-09",
+  "protocol_approved": false,
+  "collection_enabled": false,
+  "endpoint": "",
+  "study_group": "unassigned",
+  "contact": "",
+  "retention": "",
+  "ethics_review": ""
+}

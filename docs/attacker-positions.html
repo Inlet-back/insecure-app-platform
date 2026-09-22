@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>攻撃者の立場 | InsecureAppPlatform</title>
+<link rel="stylesheet" href="style.css?v=20260922i">
+<script src="nav.js?v=20260922i" defer></script>
+<script src="ui.js?v=20260922i" defer></script>
+</head>
+<body>
+<nav class="topnav" data-nav></nav>
+
+<main>
+  <h1>攻撃者の立場</h1>
+  <p class="subtitle">読むだけ。初学者は最初の3枚だけで先に進めます</p>
+
+  <div class="badges">
+    <span class="badge">座学のみ</span>
+    <span class="badge">Basic 5分</span>
+  </div>
+
+  <div class="callout note">
+    <strong>このページのゴール</strong><br>
+    4章は「どの境界が破れるか」で並んでいます。ここで渡すのは、もう1本の軸です。
+    <b>どんな能力を持った相手として攻めるのか</b>に名前を付けます。
+    カードは7枚ありますが、<b>いま読むのは最初の3枚だけ</b>で構いません。
+  </div>
+
+  <div class="callout blocked">
+    <strong>肩書ではなく、能力で切ります</strong><br>
+    「端末を奪った人」は1つの立場ではありません。
+    ロック中の端末を拾っただけの人、ロックが解けた端末を触れる人、root を取った人、
+    バックアップのファイルだけを持っている人では、<b>できることがまるで違います</b>。
+    カードは肩書ではなく、<b>その相手が実際に持っている能力</b>で切ってあります。
+  </div>
+
+  <h2 id="why">1. 脆弱性より先に、攻撃者を決めます</h2>
+
+  <p>導入では、隔離があるから攻撃がなくなったのではなく、攻撃の行き先が移っただけだという話をしました。
+  移った先の4つがそのまま4つの章です。ただし、章を開いた時点で、
+  どこが破れるかも、使う道具も、成功するかどうかも、こちらが決めてしまっています。</p>
+
+  <p>実際の診断では順番が逆になります。先に決めるのは<b>相手</b>です。
+  Android の設計を書いた <i>The Android Platform Security Model</i> という文書も、
+  機構の説明より先に、どういう相手をどこまで想定するのかを並べています。
+  想定する相手が決まっていないと、あとで「この対策は効いていますか」と聞かれたときに答えようがありません。
+  <b>効くかどうかは、相手によって変わるからです。</b></p>
+
+  <p>導入で決めた「あなたの立場」は、検証者として進むという構えのことでした。
+  このページで言う立場は別のもので、確かめるときに<b>誰の役をやるか</b>を指します。</p>
+
+  <p class="who"><b>ここは作りながら一番遅れて気づいたところです。</b>
+  4章ぶんを書き終えるまで、教材の中で攻撃者に名前が付いていませんでした。
+  各章の最後の表には「root を取った」「Frida を入れられる」と書いてあるのに、
+  それが何者で、どうすればそこに立てるのかは、どこにも書いていなかったのです。</p>
+
+  <h3>カードの読み方</h3>
+
+  <p>新しく用意した道具は1つもありません。すでに各章で使っているものに、名前と前提を付けただけです。
+  カードは3行で固定してあります。3行目の<b>そこに立つには何が要るか</b>を毎回読んでください。
+  <b>攻撃が現実的かどうかは、だいたいこの行で決まります。</b></p>
+
+  <!-- ============================ BASIC ============================ -->
+  <section class="layer basic">
+    <h2><span class="layer-tag">Basic</span>まず3つ</h2>
+    <p class="layer-meta">各章の Basic で、すでにこの3つに立っています</p>
+
+    <div class="pos-grid">
+      <div class="pos-card outside">
+        <h3>APK だけ持っている <span class="pos-side-tag">端末の外</span></h3>
+        <p class="pos-tool">unzip / apktool / grep</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>コードと Manifest と同梱リソースを全部読めます。窓口の名前も、直書きした鍵もここで出ます。</dd>
+          <dt>できないこと</dt>
+          <dd>動いている端末の中の値には、1つも届きません。</dd>
+          <dt>立つには</dt>
+          <dd>配布されている APK を手に入れるだけです。端末には触りません。</dd>
+        </dl>
+      </div>
+      <div class="pos-card outside">
+        <h3>通信路にいる人 <span class="pos-side-tag">端末の外</span></h3>
+        <p class="pos-tool">Burpなどの明示プロキシ / 攻撃者管理AP / 経路上の観測装置</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>端末の外に出ていくパケットを覗けます。条件が揃えば書き換えもできます。</dd>
+          <dt>できないこと</dt>
+          <dd>端末の中に置いてあるだけのものには届きません。</dd>
+          <dt>立つには</dt>
+          <dd>通信を明示プロキシへ向ける、攻撃者管理APを通す、経路上の機器を押さえる。
+            同じWi-Fiにいるだけでは、この能力を持つとは限りません。</dd>
+        </dl>
+      </div>
+      <div class="pos-card inside">
+        <h3>開発者の口 <span class="pos-side-tag">端末の中</span></h3>
+        <p class="pos-tool">adb shell / content query（run-asは教材の観測用途）</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>shellユーザーとして端末を操作できます。debuggableな教材アプリでは
+            <code>run-as</code> を使って、アプリ自身から見える保存形式を観測できます。</dd>
+          <dt>できないこと</dt>
+          <dd><code>run-as</code> が効くのは debuggable なアプリだけです。ストアのリリース版では通りません。</dd>
+          <dt>立つには</dt>
+          <dd>ユーザーが開発者オプションと USB デバッグを自分で有効にしている必要があります。</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <strong>初学者はここまでです</strong><br>
+      残り4枚は、取得済みファイル・攻撃者アプリ・root・Frida を使う層のものです。
+      先に <a href="setup.html">環境構築</a> から <a href="chapter1-process.html">第1章</a> へ進んでください。
+      章を通したあと、<a href="surface-map.html">攻撃面マップ</a>でこの3枚を使います。
+    </div>
+  </section>
+
+  <!-- ============================ STANDARD ============================ -->
+  <section class="layer standard">
+    <h2><span class="layer-tag">Standard</span>さらに3つ</h2>
+    <p class="layer-meta">攻撃者アプリ（P1〜P7b）と root を触った人向け</p>
+
+    <div class="pos-grid">
+      <div class="pos-card inside">
+        <h3>同じ端末の普通のアプリ <span class="pos-side-tag">端末の中</span></h3>
+        <p class="pos-tool">attacker アプリ（P0〜P7b）</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>公開されている窓口を叩けます。自分の UID で通る操作なら全部できます。</dd>
+          <dt>できないこと</dt>
+          <dd>他アプリのファイルを直接開けません。別 UID なので所有者が一致しません。</dd>
+          <dt>立つには</dt>
+          <dd>ユーザーにアプリを1つ入れてもらうだけです。特別な権限は要りません。</dd>
+        </dl>
+      </div>
+      <div class="pos-card outside">
+        <h3>アプリのデータファイルだけを手に入れた <span class="pos-side-tag">端末の外</span></h3>
+        <p class="pos-tool">バックアップの展開 / 吸い出したデータ / adb pull の結果</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>その時点のファイルの中身を、時間をかけて調べられます。端末は手元になくて構いません。</dd>
+          <dt>できないこと</dt>
+          <dd>端末の上で何かを実行できません。Keystore に鍵を使わせることも、窓口を叩くこともできません。</dd>
+          <dt>立つには</dt>
+          <dd>バックアップを手に入れる、吸い出されたデータを受け取る。端末そのものには触れていません。</dd>
+        </dl>
+      </div>
+      <div class="pos-card inside">
+        <h3>動いている端末で root を持っている <span class="pos-side-tag">端末の中</span></h3>
+        <p class="pos-tool">adb root / ファイル直読み / デバッガ / Frida の設置</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>UID の照合を無視してファイルを読めます。さらに、動いているプロセスを覗き、止め、
+            コードを注入できます。<b>この最後の1つが、1枚下のカードへの入口です。</b></dd>
+          <dt>できないこと</dt>
+          <dd>ファイルが読めることと、中身が読めることは別です。
+            Android Keystore が管理している鍵のバイト列は、それでも直接は取り出せません。
+            どこまで耐えるかは端末の保護レベル次第で、
+            アプリの「鍵がどこにあるか調べる」に出る実測値で決まります。</dd>
+          <dt>立つには</dt>
+          <dd>root 化済みの端末を使う、ブートローダを開ける、OS の脆弱性を使う。
+            <b>ロックの解けた端末が手元にあることが前提</b>です。</dd>
+        </dl>
+      </div>
+    </div>
+
+    <h3>「端末を奪った」は、これ1枚では表せません</h3>
+
+    <p>物理的に端末を手に入れただけでは、アプリのデータには届きません。
+    間に立ちはだかるものが違うので、少なくとも次の4つは別の前提として扱います。</p>
+
+    <table class="matrix">
+      <tr><th>前提</th><th>そこから何ができるか</th><th>この表のどの列か</th></tr>
+      <tr>
+        <td>ロック中の端末を物理的に取得した</td>
+        <td>ほぼ何もできません。画面ロックが解けるまで、ユーザーデータは
+          ファイルベース暗号化で保護されたままです</td>
+        <td>どの列にも立てていません</td>
+      </tr>
+      <tr>
+        <td>ロックが解けた端末を操作できる</td>
+        <td>画面から見えるものは見えます。開発者オプションが有効なら
+          <code>adb shell</code> の列に上がれます</td>
+        <td>adb shell（条件付き）</td>
+      </tr>
+      <tr>
+        <td>root / OS を侵害した</td>
+        <td>ファイルを直接読め、プロセスにも入れます。
+          ただしブートローダのアンロックはデータ消去を伴う構成が多く、
+          <b>「端末を拾ったからここに立てる」わけではありません</b></td>
+        <td>root端末（→ プロセス内）</td>
+      </tr>
+      <tr>
+        <td>バックアップやファイルのコピーだけを持っている</td>
+        <td>ファイルの中身は調べられますが、端末の上では何も実行できません</td>
+        <td>取得済みファイル</td>
+      </tr>
+    </table>
+
+    <p class="who">第1章の暗号化が効くのはいちばん下の行に対してで、
+    上から3行目に対しては効きません。<b>「端末を奪われても安全です」という一文は、
+    この4つのどれを指しているのかを言わないと判定できません。</b></p>
+
+    <h3>強い順に一直線には並びません</h3>
+
+    <p>ここまでの6枚は、上から下へ強くなっていくように読めます。端末の中に限ればそのとおりで、
+    普通のアプリより <code>adb shell</code> が広く、その上に root があります。ここは段になっています。</p>
+
+    <p>一方で、通信路にいる人は端末の中のファイルに一切届きませんし、
+    root を取った人も、経路を流れる暗号文をそのまま読めるわけではありません。
+    <b>強さが一直線なら、表は階段状になるはずです。</b>そうならないことを、攻撃面マップで確かめます。</p>
+  </section>
+
+  <!-- ============================ DEEP ============================ -->
+  <section class="layer deep">
+    <h2><span class="layer-tag">Deep</span>最後の1つ</h2>
+    <p class="layer-meta">Frida を入れた人向け。ここは必修ではありません</p>
+
+    <div class="pos-grid">
+      <div class="pos-card inside">
+        <h3>動いているアプリの中 <span class="pos-side-tag">端末の中</span></h3>
+        <p class="pos-tool">Frida</p>
+        <dl>
+          <dt>できること</dt>
+          <dd>アプリ自身として振る舞えます。アプリにできることは全部できます。</dd>
+          <dt>できないこと</dt>
+          <dd>アプリにできないことはできません。権限はアプリのものを超えません。</dd>
+          <dt>立つには</dt>
+          <dd><b>この教材では</b> root を取ったエミュレータに frida-server を置きます。
+            root端末のカードから上がる段として扱っているのは、そのためです。</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <strong>教材の前提と、技術一般の制約は別です</strong><br>
+      この教材が root を要求しているのは、<b>手順を1本に固定するため</b>であって、
+      Frida 一般が root を必要とするからではありません。
+      非 root の端末でも、次のような経路でプロセス内にコードを持ち込めます。
+      <ul>
+        <li><b>Frida Gadget</b> を組み込んで APK を再パッケージし、自分の鍵で署名し直す</li>
+        <li><code>android:debuggable="true"</code> のアプリにデバッガとして接続する</li>
+      </ul>
+      どちらも「アプリを配布された形のまま動かす」前提を崩しますが、
+      root は取っていません。<b>root → Frida が唯一の経路ではありません。</b>
+      攻撃面マップで root の列を評価するときは、
+      「root がなければプロセス内に入れない」とは読まないでください。
+    </div>
+
+    <p>7枚を並べると、こうなります。端末の外に3つ、中に4つで、中の3つは段になっています。</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 720 250" role="img" aria-label="端末の外の2つの立場と、端末の中で段になっている4つの立場を並べた図">
+        <rect class="plate" x="8" y="8" width="704" height="234" rx="10"/>
+
+        <text class="t-sm" x="28" y="36">端末の外</text>
+        <rect class="card" x="28" y="46" width="180" height="46" rx="6"/>
+        <text class="t-b" x="42" y="68">APK だけ持っている</text>
+        <text class="t-sm" x="42" y="84">コードは全部。値は1つもない</text>
+
+        <rect class="card" x="28" y="104" width="180" height="46" rx="6"/>
+        <text class="t-b" x="42" y="126">通信路にいる人</text>
+        <text class="t-sm" x="42" y="142">出ていくものだけ</text>
+
+        <rect class="card" x="28" y="162" width="180" height="46" rx="6"/>
+        <text class="t-b" x="42" y="184">取得済みファイル</text>
+        <text class="t-sm" x="42" y="200">端末の上では何もできない</text>
+
+        <line class="flow dash" x1="238" y1="30" x2="238" y2="226"/>
+        <text class="t-sm" x="246" y="36">端末の中</text>
+
+        <rect class="card" x="268" y="46" width="200" height="40" rx="6"/>
+        <text class="t-b" x="282" y="71">同じ端末の普通のアプリ</text>
+
+        <rect class="card" x="268" y="98" width="200" height="40" rx="6"/>
+        <text class="t-b" x="282" y="123">開発者の口（adb shell）</text>
+
+        <rect class="card" x="268" y="150" width="200" height="40" rx="6"/>
+        <text class="t-b" x="282" y="175">root / OS を侵害</text>
+
+        <rect class="card" x="498" y="150" width="190" height="40" rx="6"/>
+        <text class="t-b" x="512" y="175">動いているアプリの中</text>
+        <path class="block" d="M470 170 h20"/>
+        <text class="t-sm" x="498" y="212">本教材では root の先。一般には</text>
+        <text class="t-sm" x="498" y="228">Gadget や再署名でも到達しうる</text>
+
+        <text class="t-sm" x="268" y="226">上の2つは、下の段へ自動では上がれません</text>
+      </svg>
+      <figcaption>立場は7つ。端末の中の3つは段になっていて、外の3つは別の軸に立っています。</figcaption>
+    </figure>
+  </section>
+
+  <h2>2. この名前をどこで使うか</h2>
+
+  <p>各章を通したあと、<a href="surface-map.html">攻撃面マップ</a>で、
+  1つの資産に対してどの立場から届くのかを数えます。表は層ごとに3枚あり、
+  Basic の表に出てくる立場は、このページの最初の3枚だけです。</p>
+
+  <p>そこで数えるのは<b>最終的な到達可能性</b>です。
+  root のように、直接はできなくても一段進めば届く立場は、
+  マップでは <b>◐</b> として残ります。<b>「直接できないこと」を「できないこと」と書かないでください。</b></p>
+
+  <div class="pager">
+    <a href="intro-sandbox.html">← 導入</a>
+    <a href="setup.html">環境構築 →</a>
+    <a href="surface-map.html">攻撃面マップ</a>
+  </div>
+</main>
+
+<footer>InsecureAppPlatform Learning Docs — based on the OWASP MASTG / MASVS</footer>
+</body>
+</html>
