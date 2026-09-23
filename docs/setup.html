@@ -13,9 +13,12 @@
 
 <main>
   <h1>環境構築</h1>
-  <p class="subtitle">上から順に貼っていけば終わります</p>
+  <p class="subtitle">OSを選び、上から順に実行してください</p>
 
   <div class="os-switch" data-os-switch></div>
+  <p data-os="win">Windows 10 / 11 の x64 PC で、<b>PowerShell</b>に貼り付けて実行します。
+  Android SDK はコマンドで導入できます。Android Studio のインストールは不要です。
+  途中で赤いエラーが出たら、そのブロックで止めてください。</p>
 
   <ul class="steps-index">
     <li><a href="#s1">1 落として展開</a></li>
@@ -40,20 +43,28 @@
   合わせて 12MB ほどです。</p>
 
   <div data-os="mac">
-<pre><code>mkdir -p ~/ws &amp;&amp; cd ~/ws
-curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/InsecureAppPlatform-src.zip
-unzip -q InsecureAppPlatform-src.zip
-cd InsecureAppPlatform-*/
-curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/app-debug.apk
-curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/attacker-debug.apk
+<pre><code>mkdir -p "$HOME/ws" &amp;&amp;
+iap_unpack=$(mktemp -d "$HOME/ws/iap.XXXXXX") &amp;&amp;
+curl -fL https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/InsecureAppPlatform-src.zip -o "$iap_unpack/source.zip" &amp;&amp;
+unzip -q "$iap_unpack/source.zip" -d "$iap_unpack" &amp;&amp;
+cd "$iap_unpack"/InsecureAppPlatform-*/ &amp;&amp;
+curl -fLO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/app-debug.apk &amp;&amp;
+curl -fLO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/attacker-debug.apk &amp;&amp;
 pwd</code></pre>
   </div>
 
   <div data-os="win">
-<pre><code>mkdir $HOME\ws -Force; cd $HOME\ws
+<pre><code>$ErrorActionPreference = "Stop"
+New-Item -ItemType Directory -Path "$HOME\ws" -Force | Out-Null
+Set-Location "$HOME\ws"
 Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/InsecureAppPlatform-src.zip -OutFile InsecureAppPlatform-src.zip
 Expand-Archive .\InsecureAppPlatform-src.zip -DestinationPath . -Force
-cd (Get-ChildItem -Directory InsecureAppPlatform-*)[0]
+$project = Get-ChildItem -Directory -Filter "InsecureAppPlatform-*" |
+  Sort-Object Name -Descending | Select-Object -First 1
+if (!$project -or !(Test-Path (Join-Path $project.FullName "gradlew.bat"))) {
+  throw "ソースの展開先が見つかりません。ZIPのダウンロードと展開を確認してください。"
+}
+Set-Location $project.FullName
 Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/app-debug.apk -OutFile app-debug.apk
 Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/attacker-debug.apk -OutFile attacker-debug.apk
 pwd</code></pre>
@@ -72,40 +83,122 @@ pwd</code></pre>
   <h2 id="s2">2. JDK と Android SDK を入れる</h2>
 
   <div data-os="mac">
-<pre><code>brew install --cask temurin@17
-brew install --cask android-commandlinetools</code></pre>
-
-<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-export ANDROID_HOME=$HOME/android-sdk
-export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator
-
-sdkmanager --sdk_root="$ANDROID_HOME" --licenses
-sdkmanager --sdk_root="$ANDROID_HOME" \
-  "cmdline-tools;latest" "platform-tools" "emulator" "system-images;android-33;google_apis;arm64-v8a"</code></pre>
-
-    <p>Intel の Mac なら、最後の <code>arm64-v8a</code> を <code>x86_64</code> に読み替えてください。</p>
+<p>macOS 標準のターミナル（zsh）を使います。まず Homebrew を使える状態にします。
+    未導入ならインストーラが実行され、パスワードや Command Line Tools の導入を求められる場合があります。</p>
+<pre><code>(
+  set -eu
+  if ! command -v brew &gt;/dev/null 2&gt;&amp;1 &amp;&amp;
+     [ ! -x /opt/homebrew/bin/brew ] &amp;&amp; [ ! -x /usr/local/bin/brew ]; then
+    iap_installer=$(mktemp)
+    curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o "$iap_installer"
+    /bin/bash "$iap_installer"
+    rm "$iap_installer"
+  fi
+) &amp;&amp; {
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+  command -v brew
+}</code></pre>
+    <p>JDK と SDK ツールを入れ、設定を専用ファイルへ保存します。
+    Apple Silicon / Intel は自動判定します。Apple Silicon では Rosetta で起動したターミナルを使わないでください。</p>
+<pre><code>(
+  set -eu
+  brew install --cask temurin@17
+  brew install --cask android-commandlinetools
+  mkdir -p "$HOME/.config/insecure-app-platform"
+  cat &gt; "$HOME/.config/insecure-app-platform/android-env.sh" &lt;&lt;'ENV'
+JAVA_HOME=$(/usr/libexec/java_home -v 17) || return 1
+export JAVA_HOME
+export ANDROID_HOME="$HOME/android-sdk"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+case "$(uname -m)" in
+  arm64) export IAP_ANDROID_ABI=arm64-v8a ;;
+  x86_64) export IAP_ANDROID_ABI=x86_64 ;;
+  *) echo "未対応の CPU です" &gt;&amp;2; return 1 ;;
+esac
+ENV
+  source "$HOME/.config/insecure-app-platform/android-env.sh"
+  # 最初は Homebrew が配置したツールで、指定した SDK フォルダへ導入します。
+  iap_sdkmanager="$(brew --prefix)/bin/sdkmanager"
+  test -x "$iap_sdkmanager"
+  "$JAVA_HOME/bin/java" -version
+  "$iap_sdkmanager" --sdk_root="$ANDROID_HOME" --licenses
+  "$iap_sdkmanager" --sdk_root="$ANDROID_HOME" \
+    "cmdline-tools;latest" "platform-tools" "emulator" \
+    "system-images;android-33;google_apis;$IAP_ANDROID_ABI" \
+    "platforms;android-35" "build-tools;35.0.0"
+) &amp;&amp; source "$HOME/.config/insecure-app-platform/android-env.sh" &amp;&amp; adb version</code></pre>
+    <p>赤いエラーやダウンロード失敗が出たら、そのブロックで止めてください。
+    <b>新しいターミナルでは、次の行で設定を読み戻します。</b>そのあと手順1 の最後に表示されたフォルダへ移動してください。</p>
+<pre><code>source "$HOME/.config/insecure-app-platform/android-env.sh"</code></pre>
   </div>
 
   <div data-os="win">
-<pre><code>winget install --id EclipseAdoptium.Temurin.17.JDK</code></pre>
+<p>まず JDK 17 を入れ、その場で環境変数を設定します。インストーラの権限確認が出たら内容を確認してください。</p>
+<pre><code>$ErrorActionPreference = "Stop"
+winget install --id EclipseAdoptium.Temurin.17.JDK --exact --source winget
+# 既にインストール済みの場合も、次の実在確認で判定します。
+$jdk = Get-ChildItem -Path "$env:ProgramFiles\Eclipse Adoptium\jdk-17*",
+  "$env:LOCALAPPDATA\Programs\Eclipse Adoptium\jdk-17*" `
+  -Directory -ErrorAction SilentlyContinue |
+  Where-Object { Test-Path (Join-Path $_.FullName "bin\javac.exe") } |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if (!$jdk) { throw "JDK 17 が見つかりません。winget のインストール結果を確認してください。" }
+$env:JAVA_HOME = $jdk.FullName
+$env:ANDROID_HOME = Join-Path $HOME "android-sdk"
+$env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\cmdline-tools\latest\bin;$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:Path"
+&amp; "$env:JAVA_HOME\bin\java.exe" -version
+if ($LASTEXITCODE -ne 0) { throw "Java の起動に失敗しました。" }
 
-    <p>コマンドラインツールは <code>winget</code> に無いので、
-    <a href="https://developer.android.com/studio#command-tools">developer.android.com</a> から
-    <code>commandlinetools-win-&lt;番号&gt;_latest.zip</code> を落とします。
-    <b>展開先のフォルダ名を <code>latest</code> にする</b>ところが要点です。</p>
+# 次回の PowerShell でも同じ JDK と SDK を使います。
+[Environment]::SetEnvironmentVariable("JAVA_HOME", $env:JAVA_HOME, "User")
+[Environment]::SetEnvironmentVariable("ANDROID_HOME", $env:ANDROID_HOME, "User")
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$entries = @("$env:JAVA_HOME\bin", "$env:ANDROID_HOME\cmdline-tools\latest\bin",
+  "$env:ANDROID_HOME\platform-tools", "$env:ANDROID_HOME\emulator") + @($userPath -split ";")
+[Environment]::SetEnvironmentVariable("Path", (($entries | Where-Object { $_ } | Select-Object -Unique) -join ";"), "User")</code></pre>
 
-<pre><code>$env:ANDROID_HOME = "$HOME\android-sdk"
-mkdir "$env:ANDROID_HOME\cmdline-tools" -Force
-Expand-Archive "$HOME\Downloads\commandlinetools-win-*_latest.zip" `
-  -DestinationPath "$env:ANDROID_HOME\cmdline-tools"
-Rename-Item "$env:ANDROID_HOME\cmdline-tools\cmdline-tools" "latest"
-
-$env:Path += ";$env:ANDROID_HOME\cmdline-tools\latest\bin"
-$env:Path += ";$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator"
-
-sdkmanager --sdk_root="$env:ANDROID_HOME" --licenses
-sdkmanager --sdk_root="$env:ANDROID_HOME" `
-  "platform-tools" "emulator" "system-images;android-33;google_apis;x86_64"</code></pre>
+    <p>次に SDK を取得します。Downloads フォルダへの手動保存は不要です。</p>
+<pre><code>$ErrorActionPreference = "Stop"
+# Google の SDK 配布一覧から Windows 用の安定版を取得します。
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[xml]$catalog = (Invoke-WebRequest -UseBasicParsing `
+  "https://dl.google.com/android/repository/repository2-1.xml").Content
+$package = $catalog.SelectSingleNode("//*[local-name()='remotePackage' and @path='cmdline-tools;latest'][*[local-name()='channelRef' and @ref='channel-0']]")
+if (!$package) { throw "SDK 配布一覧に安定版が見つかりません。" }
+$archive = $package.SelectSingleNode(".//*[local-name()='archive'][*[local-name()='host-os']='windows']/*[local-name()='complete']")
+if (!$archive) { throw "Windows 用 SDK が見つかりません。" }
+$file = $archive.SelectSingleNode("*[local-name()='url']").InnerText
+if ($file -notmatch '^commandlinetools-win-[0-9]+_latest\.zip$') { throw "SDK のファイル名を確認してください。" }
+$stage = Join-Path $env:TEMP ("iap-sdk-" + [guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Path $stage | Out-Null
+$zip = Join-Path $stage "sdk.zip"
+Invoke-WebRequest -UseBasicParsing "https://dl.google.com/android/repository/$file" -OutFile $zip
+$checksum = $archive.SelectSingleNode("*[local-name()='checksum']").InnerText
+if ((Get-FileHash $zip -Algorithm SHA1).Hash -ne $checksum.Trim()) {
+  throw "SDK のチェックサムが一致しません。手順2をやり直してください。"
+}
+Expand-Archive -LiteralPath $zip -DestinationPath $stage
+$toolsDir = Join-Path $env:ANDROID_HOME "cmdline-tools"
+$latest = Join-Path $toolsDir "latest"
+New-Item -ItemType Directory -Path $toolsDir -Force | Out-Null
+if (Test-Path $latest) {
+  # 再実行時は既存のフォルダを残します。
+  Move-Item -LiteralPath $latest -Destination (Join-Path $toolsDir ("backup-" + [guid]::NewGuid().ToString()))
+}
+Move-Item -LiteralPath (Join-Path $stage "cmdline-tools") -Destination $latest
+$sdkmanager = Join-Path $latest "bin\sdkmanager.bat"
+if (!(Test-Path $sdkmanager)) { throw "sdkmanager.bat がありません。展開結果を確認してください。" }
+&amp; $sdkmanager "--sdk_root=$env:ANDROID_HOME" --licenses
+if ($LASTEXITCODE -ne 0) { throw "ライセンス確認に失敗しました。" }
+&amp; $sdkmanager "--sdk_root=$env:ANDROID_HOME" `
+  "platform-tools" "emulator" "system-images;android-33;google_apis;x86_64" `
+  "platforms;android-35" "build-tools;35.0.0"
+if ($LASTEXITCODE -ne 0) { throw "SDK のインストールに失敗しました。" }
+adb version</code></pre>
   </div>
 
   <div class="callout note">
@@ -117,17 +210,35 @@ sdkmanager --sdk_root="$env:ANDROID_HOME" `
   <h2 id="s3">3. AVD を作って起動する</h2>
 
   <div data-os="mac">
-<pre><code>avdmanager create avd -n ws -d pixel_7 \
-  -k "system-images;android-33;google_apis;arm64-v8a"
-emulator -avd ws &amp;
-adb wait-for-device
-adb shell getprop ro.build.version.sdk</code></pre>
+<pre><code>source "$HOME/.config/insecure-app-platform/android-env.sh" &amp;&amp; (
+  set -eu
+  avdmanager create avd -n ws -d pixel_7 \
+    -k "system-images;android-33;google_apis;$IAP_ANDROID_ABI"
+  emulator -avd ws &gt; "$HOME/.config/insecure-app-platform/emulator.log" 2&gt;&amp;1 &amp;
+  iap_emulator_pid=$!
+  # 接続だけでなく Android の起動完了まで、最大5分待ちます。
+  iap_booted=0
+  for iap_attempt in {1..150}; do
+    if [ "$(adb -e shell getprop sys.boot_completed 2&gt;/dev/null | tr -d '\r')" = "1" ]; then
+      iap_booted=1
+      break
+    fi
+    if ! kill -0 "$iap_emulator_pid" 2&gt;/dev/null; then break; fi
+    sleep 2
+  done
+  if [ "$iap_booted" != "1" ]; then
+    echo "起動を確認できません。android-env.sh と同じフォルダの emulator.log を確認してください。" &gt;&amp;2
+    exit 1
+  fi
+  adb -e shell getprop ro.build.version.sdk
+)</code></pre>
   </div>
 
   <div data-os="win">
 <pre><code>avdmanager create avd -n ws -d pixel_7 `
   -k "system-images;android-33;google_apis;x86_64"
-Start-Process emulator -ArgumentList "-avd","ws"
+if ($LASTEXITCODE -ne 0) { throw "AVD の作成に失敗しました。" }
+Start-Process -FilePath "$env:ANDROID_HOME\emulator\emulator.exe" -ArgumentList "-avd","ws"
 adb wait-for-device
 adb shell getprop ro.build.version.sdk</code></pre>
   </div>
@@ -193,6 +304,12 @@ adb uninstall com.example.attacker</code></pre>
   </div>
 
   <h2 id="s5">5. モックサーバ（第3章で使う）</h2>
+  <div data-os="mac">
+    <p>Python が未導入なら、手順2 と同じターミナルで先に実行してください。</p>
+<pre><code>brew install python</code></pre>
+  </div>
+  <p>サーバは起動したままにします。以降の作業は別のターミナルでリポジトリのルートへ移動して進めてください。
+  <span data-os="mac">新しいターミナルでは手順2 の <code>source</code> も実行します。</span></p>
 <pre><code>python3 tools/mockserver/server.py</code></pre>
   <p>起動時に表示される公開鍵ピンは第3章 Standard 手順6 で使います。
   待ち受けは <code>127.0.0.1</code> のみで、エミュレータからは <code>10.0.2.2</code> として見えます。
@@ -215,11 +332,13 @@ adb uninstall com.example.attacker</code></pre>
   そこで初めてビルドが要ります。第1章・第2章だけなら手順4 のままで構いません。</p>
 
   <div data-os="mac">
-<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+<pre><code>source "$HOME/.config/insecure-app-platform/android-env.sh" &amp;&amp;
 ./gradlew :app:installDebug</code></pre>
   </div>
   <div data-os="win">
-<pre><code>$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
+<pre><code>$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:ANDROID_HOME = [Environment]::GetEnvironmentVariable("ANDROID_HOME", "User")
+if (!$env:JAVA_HOME -or !$env:ANDROID_HOME) { throw "先に手順2を実行してください。" }
 .\gradlew.bat :app:installDebug</code></pre>
   </div>
 
@@ -281,9 +400,9 @@ frida-ps -Ua | head     # アプリが一覧に出れば準備完了</code></pre
   手順1 のフォルダ（リポジトリのルート）で実行してください。</p>
 
   <div data-os="mac">
-<pre><code>cd ~/ws/InsecureAppPlatform-*/
-curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-debug.apk
-curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-attacker-debug.apk
+<pre><code># 手順1 で表示されたリポジトリのルートで実行します。
+curl -fLO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-debug.apk
+curl -fLO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-attacker-debug.apk
 adb install -r squeeze-debug.apk
 adb install -r squeeze-attacker-debug.apk</code></pre>
   </div>
@@ -307,11 +426,13 @@ adb install -r squeeze-attacker-debug.apk</code></pre>
     ビルドと同時にエミュレータへ入るので <code>adb install</code> は要りません。
     配っている APK と同じ鍵で署名されるので、上書きで入れ直せます。</p>
     <div data-os="mac">
-<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+<pre><code>source "$HOME/.config/insecure-app-platform/android-env.sh" &amp;&amp;
 ./gradlew :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
     </div>
     <div data-os="win">
-<pre><code>$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
+<pre><code>$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:ANDROID_HOME = [Environment]::GetEnvironmentVariable("ANDROID_HOME", "User")
+if (!$env:JAVA_HOME -or !$env:ANDROID_HOME) { throw "先に手順2を実行してください。" }
 .\gradlew.bat :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
     </div>
   </details>
@@ -360,10 +481,19 @@ adb shell pm clear com.example.squeeze.attacker</code></pre>
   <table>
     <tr><th>症状</th><th>原因と対処</th></tr>
     <tr><td><code>sdkmanager: command not found</code></td>
-        <td><code>PATH</code> の行が効いていない。ターミナルを開き直したら入れ直す</td></tr>
+        <td><span data-os="mac">手順2 を完了し、新しいターミナルでは <code>source "$HOME/.config/insecure-app-platform/android-env.sh"</code> を実行する</span><span data-os="win">手順2 の PATH 設定を確認し、ターミナルを開き直す</span></td></tr>
+    <tr data-os="mac"><td><code>brew: command not found</code></td>
+        <td>手順2 の最初のブロックで Homebrew を導入し、<code>shellenv</code> でパスを設定する</td></tr>
+    <tr data-os="mac"><td>AVD のイメージが見つからない、CPU が合わない</td>
+        <td>手順2 と手順3 を同じターミナルで実行する。Apple Silicon は <code>arm64-v8a</code>、Intel は <code>x86_64</code> を自動選択する</td></tr>
     <tr data-os="win"><td><code>sdkmanager</code> が Java のエラーを出す</td>
-        <td>展開したフォルダ名が <code>latest</code> になっていない。
-            <code>cmdline-tools\latest\bin\</code> の形にする</td></tr>
+        <td>手順2 の JDK 設定を実行し、<code>&amp; "$env:JAVA_HOME\bin\java.exe" -version</code> が 17 を示すか確認する</td></tr>
+    <tr data-os="win"><td>Android Studio のダウンロード画面が出る</td>
+        <td>ブラウザを閉じて、手順2 の PowerShell コマンドで SDK を取得する</td></tr>
+    <tr data-os="win"><td>Downloads 内の ZIP やパスが見つからない</td>
+        <td>手順2 は ZIP を一時フォルダに自動取得する。古い手動ダウンロードのコマンドを使わず、手順2 を最初から実行する</td></tr>
+    <tr data-os="win"><td>新しいターミナルで <code>adb</code> が見つからない</td>
+        <td>Windows Terminal や VS Code を全ウィンドウ終了して開き直す。タブを開き直すだけでは、親アプリの古い環境変数が残ることがある</td></tr>
     <tr><td>インストールが黙って止まる</td>
         <td>ライセンスに同意していない。<code>sdkmanager --licenses</code> を実行する</td></tr>
   </table>
