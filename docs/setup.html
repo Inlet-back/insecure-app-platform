@@ -25,6 +25,7 @@
     <li><a href="#s5">5 モックサーバ</a></li>
     <li><a href="#s6">6 ビルド</a></li>
     <li><a href="#s7">7 Frida</a></li>
+    <li><a href="#s8">8 Extra: Squeeze</a></li>
     <li><a href="#trouble">よくある詰まり</a></li>
   </ul>
 
@@ -264,6 +265,62 @@ frida-ps -Ua | head     # アプリが一覧に出れば準備完了</code></pre
     （<code>-F</code> は最前面のアプリに接続する指定）。
     <code>-f</code> でアプリを起動する形は、起動直後でまだクラスが読み込まれておらず
     失敗することがあります。実行はリポジトリのルートから行ってください。
+  </div>
+
+  <h2 id="s8">8. Extra: Squeeze を入れる（任意）</h2>
+  <p>Core の4章とは別の、EC アプリを題材にした追加演習です。
+  Core を終えてからで構いません。やらないなら飛ばしてください。</p>
+
+  <div class="callout note">
+    <strong>Core の4つはそのまま残ります</strong><br>
+    Squeeze は別パッケージです。手順4 で入れた被害者アプリ・攻撃者アプリと、
+    そこに保存したデータを消さずに追加できます。
+  </div>
+
+  <p>Extra の2つは APK を配っていません。手順1 で展開したソース一式の中に
+  <code>squeeze/</code> が入っているので、そこからビルドします。
+  ビルドと同時にエミュレータへ入るので <code>adb install</code> は要りません。</p>
+
+  <div data-os="mac">
+<pre><code>cd ~/ws/InsecureAppPlatform-*/
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+./gradlew :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+  </div>
+  <div data-os="win">
+<pre><code>cd (Get-ChildItem -Directory $HOME\ws\InsecureAppPlatform-*)[0]
+$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
+.\gradlew.bat :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+  </div>
+
+  <p>4つのアプリが別々に並べば入っています。</p>
+  <div data-os="mac">
+<pre><code>adb shell pm list packages | grep -E "insecureappplatform|attacker"</code></pre>
+  </div>
+  <div data-os="win">
+<pre><code>adb shell pm list packages | Select-String "insecureappplatform|attacker"</code></pre>
+  </div>
+  <pre class="out"><code>package:com.example.insecureappplatform
+package:com.example.attacker
+package:com.example.insecureappplatform.squeeze
+package:com.example.squeeze.attacker</code></pre>
+
+  <div class="callout note">
+    <strong>署名は Core と同じ鍵です</strong><br>
+    Squeeze は被害者アプリと同じ鍵、Squeeze Lab は攻撃者アプリと同じ鍵で署名されます。
+    第2章で見た signature permission の実験が、Extra 側でもそのまま成立します。
+  </div>
+
+  <p>Extra のデータだけを消したいときはこれを実行します。Core の記録とアプリデータには触れません。</p>
+  <div data-os="mac">
+<pre><code>./tools/squeeze/reset-extra.sh</code></pre>
+  </div>
+  <div data-os="win">
+<pre><code>adb shell pm clear com.example.insecureappplatform.squeeze
+adb shell pm clear com.example.squeeze.attacker</code></pre>
+  </div>
+
+  <div class="learn-actions">
+    <a class="learn-btn" href="extras/squeeze/index.html">Extra: Squeeze の手順へ</a>
   </div>
 
   <h2 id="trouble">よくある詰まり</h2>
