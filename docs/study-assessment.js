@@ -2,6 +2,8 @@
   "use strict";
 
   const STORE_KEY = "insecureapp.assessments.v1";
+  // 二重送信よけ。押しても画面が変わらないように見えて2回押される事故が起きる。
+  let submitting = false;
   const phase = new URLSearchParams(location.search).get("phase");
   const allowedPhases = new Set(["pre", "post", "delayed"]);
   const byId = (id) => document.getElementById(id);
@@ -126,6 +128,13 @@
       const instruments = await response.json();
       const instrument = instruments.phases[phase];
       const previous = loadSaved()[phase];
+      if (previous) {
+        message.hidden = false;
+        message.innerHTML = "<strong>この回答は送信済みです。</strong><br>" +
+          "研究の回答なので、確定したあとの書き換えはできません。" +
+          "研究参加ページに戻り、次のステップへ進んでください。";
+        return;
+      }
       byId("assessment-title").textContent = instrument.title;
       byId("assessment-description").textContent = instrument.description;
       if (phase === "pre") {
@@ -142,6 +151,9 @@
 
       byId("assessment-form").addEventListener("submit", (event) => {
         event.preventDefault();
+        if (submitting) return;
+        submitting = true;
+        byId("assessment-submit").disabled = true;
         const formData = new FormData(event.currentTarget);
         const answers = {};
         const confidence = {};

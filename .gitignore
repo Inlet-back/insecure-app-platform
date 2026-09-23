@@ -37,3 +37,6 @@ __pycache__/
 
 # Claude Code のローカル設定（絶対パスが入る。公開しない）
 /.claude/settings.local.json
+
+# 収集した参加者の回答。リポジトリに入れない。
+/study/collector/*.jsonl
