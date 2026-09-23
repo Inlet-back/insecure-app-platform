@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第3章 ネットワーク境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922i">
-<script src="nav.js?v=20260922i" defer></script>
-<script src="ui.js?v=20260922i" defer></script>
-<script src="learn.js?v=20260922i" defer></script>
+<link rel="stylesheet" href="style.css?v=20260923a">
+<script src="nav.js?v=20260923a" defer></script>
+<script src="ui.js?v=20260923a" defer></script>
+<script src="learn.js?v=20260923a" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -313,6 +313,7 @@
     <h3>4. HTTPS で送る</h3>
     <p>アプリで<b>「2. HTTPS で送る」</b>を押します。押す前に、下で結果を予測してください。</p>
     <div class="learn-step" data-step="ch3-s4"></div>
+    <div class="after-step">
 <pre class="out"><code>[失敗] SSLHandshakeException
 Trust anchor for certification path not found.</code></pre>
 
@@ -324,6 +325,7 @@ Trust anchor for certification path not found.</code></pre>
       証明書自体は正しく作られていて、期限も切れていません。
       足りないのは「発行者を端末が知っているか」だけです。<br>
       TLS が守っているのは「盗み見」だけではなく、<b>「相手が誰か」</b>でもあります。
+    </div>
     </div>
 
     <h3>5. 差分実験：CA をどこに入れるかで結果が変わる</h3>
@@ -346,6 +348,7 @@ Trust anchor for certification path not found.</code></pre>
     </details>
 
     <div class="learn-step" data-step="ch3-s5"></div>
+    <div class="after-step">
 
     <p>続けて比較する場合だけ、<code>network_security_config.xml</code>の
     <code>&lt;certificates src="user" /&gt;</code>を有効にして再インストールし、同じ操作を繰り返します。</p>
@@ -363,6 +366,7 @@ Trust anchor for certification path not found.</code></pre>
       つまり「HTTPS だから安全」ではなく、<b>信頼ストアに何が載っているかで安全性が決まります</b>。
       「HTTPS なので問題ありません」と書かれた診断結果を見たら、
       まず信頼ストアの話に置き換えて読み直してください。
+    </div>
     </div>
 
     <p><b>Standard はここまで。</b> HTTPSの成否は「暗号化したか」だけでなく、

@@ -112,8 +112,10 @@ class AttackerActivity : AppCompatActivity() {
             startVictimActivity(".AdminActivity")
         },
 
+        // 比較対象は «同じ第2章の» 非公開画面にそろえる。第1章の画面を借りると、
+        // 資料の手順4 と別のものを見ることになる。
         Probe("P6", "被害者の非公開画面を直接起動する (exported=false)", "第2章: 止められるはず") {
-            startVictimActivity(".InsecureStorageActivity")
+            startVictimActivity(".AuthActivity")
         },
 
         Probe("P7", "被害者に Intent を投げて設定を書き換える (Receiver)", "第2章: 通ってしまう") {
@@ -135,7 +137,9 @@ class AttackerActivity : AppCompatActivity() {
                 appendLine("送信自体はエラーにならない。sendBroadcast は «届いたか» を返さない。")
                 appendLine("判定は受信側の permission で行われ、こちらには何も通知されない。")
                 appendLine(sameSignature())
-                append("被害者アプリの管理画面で role が変わっていなければ、配送されていない。")
+                append("被害者アプリの管理画面で role を確認すること。ただし role が変わらないことは、")
+                append("«配送されなかった» ことの証明ではない。受信側が受け取って何もしなかった場合と、")
+                append("そもそも配送されなかった場合を、送信側からは区別できない。")
             }
         }
     )
@@ -167,12 +171,20 @@ class AttackerActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 明示 Intent で被害者アプリの Activity を起動する。
+     *
+     * 戻り値で «画面が出た» とは書かない。startActivity() が例外を投げなかったことは
+     * 起動要求が受理されたところまでしか意味せず、実際に前面に出たかは対象アプリ側で見る。
+     * 「認証を通さずに」とも書かない。この教材のログイン画面は管理画面へ遷移しないので、
+     * 越えるべき関門がそもそも無く、通っていないものを «通さずに» とは言えない。
+     */
     private fun startVictimActivity(cls: String): String {
         startActivity(Intent().apply {
             component = ComponentName(victim, victim + cls)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         })
-        return "起動に成功した。認証を通さずに画面が開いている。"
+        return "起動要求は拒否されなかった。実際に画面が出たかは被害者アプリ側で確認すること。"
     }
 
     private fun execute(probe: Probe) {

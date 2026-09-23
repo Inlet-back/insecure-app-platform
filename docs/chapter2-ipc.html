@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第2章 IPC境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922i">
-<script src="nav.js?v=20260922i" defer></script>
-<script src="ui.js?v=20260922i" defer></script>
-<script src="learn.js?v=20260922i" defer></script>
+<link rel="stylesheet" href="style.css?v=20260923a">
+<script src="nav.js?v=20260923a" defer></script>
+<script src="ui.js?v=20260923a" defer></script>
+<script src="learn.js?v=20260923a" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -247,13 +247,30 @@
     誰が呼んだのかは確認されず、呼ばれたとおりに開きました。</p>
 
     <h3>2. 窓口からデータを持ち出す</h3>
-    <p>第1章で保存した認証情報を、アプリの画面を使わずに取り出します。</p>
+    <p>第1章では、別のアプリから <code>user_session</code> の保存ファイルを
+    <b>直接は読めない</b>ことを確かめました。ファイルの持ち主が違うからです。</p>
+    <p>このアプリには、その同じ <code>user_session</code> の中身を外へ返す
+    ContentProvider があります。<b>ファイルのアクセス権は何も変えずに</b>、
+    アプリ自身にデータを読ませる経路と比べます。</p>
+    <p>窓口の中身はこうなっています。第1章で覗いたのと同じ保存領域を開いて、
+    入っている値をそのまま並べて返しているだけです。
+    この窓口を外から呼べるようにしているのは <code>AndroidManifest.xml</code> の
+    <code>&lt;provider android:name=".SessionProvider"&gt;</code> の宣言で、
+    そちらは Standard 手順3 で読みます。</p>
+<pre><code>grep -A3 "getSharedPreferences" \
+  app/src/main/java/com/example/insecureappplatform/SessionProvider.kt</code></pre>
+<pre class="out"><code>        val prefs = ctx().getSharedPreferences("user_session", Context.MODE_PRIVATE)
+        val cursor = MatrixCursor(arrayOf("key", "value"))
+        prefs.all.forEach { (k, v) -&gt; cursor.addRow(arrayOf(k, v?.toString())) }
+        return cursor</code></pre>
+    <p class="layer-meta">先に第1章 Basic の
+    <code>[Basic] ログイン情報を保存する</code>で保存を済ませておいてください。
+    保存していなければ、次のコマンドは0行を返します。</p>
 <pre><code>adb shell content query --uri content://com.example.insecureappplatform.session/creds</code></pre>
 <pre class="out"><code>Row: 0 key=username, value=alice
 Row: 1 key=password, value=P@ssw0rd123</code></pre>
 
-    <p class="layer-meta">出てくる行は <code>user_session</code> に保存されている内容そのものです。
-    第1章をまだやっていなければ空になります。</p>
+    <p class="layer-meta">出てくる行は <code>user_session</code> に保存されている内容そのものです。</p>
 
     <div class="callout vuln">
       <strong>確認できたこと</strong><br>
@@ -291,68 +308,138 @@ Row: 1 key=password, value=P@ssw0rd123</code></pre>
     <p class="layer-meta">所要 1〜2時間 / 中級者向け・推奨。</p>
 
     <div class="callout note">
-      <strong>最初は、Attackerアプリの3つのボタンだけ試します</strong><br>
+      <strong>この節で使うもの</strong><br>
       この章ではアプリを2つ使います。
       <b>InsecureAppPlatform</b>が調べられる側、<b>Attacker</b>が外からアクセスを試す側です。
-      P3などの名前はAttackerアプリに表示されるボタン番号なので、暗記する必要はありません。
+      P3などの名前はAttackerアプリのボタンに書いてある参照番号なので、暗記する必要はありません。
       Providerは、あるアプリが別のアプリへデータを渡すための<b>データの窓口</b>です。
       <ol>
         <li><b>準備：</b>InsecureAppPlatformを開き、第1章の
           <code>[Basic] ログイン情報を保存する</code>でユーザー名とパスワードを保存します。
           すでに保存してあれば、やり直さなくて構いません。</li>
-        <li><b>公開設定を比べる：</b>手順3のコマンドを実行し、Androidが拒否する画面を確認します。</li>
-        <li><b>3つのボタンを押す：</b>Attackerアプリを開き、
-          <b>P3「無防備なProviderを読む」→ P4「permissionで守ったProviderを読む」→
-          P4b「permissionが付いたか調べる」</b>の順に押します。</li>
-        <li><b>ボタンの下に出る結果を読む：</b>1つ押すたびに下半分のログを読み、
-          その場の設問で結果を選びます。3つをまとめて押さないでください。</li>
-        <li><b>コードで答え合わせ：</b>3つの結果を記録したあと、手順5のコマンドを実行します。
-          2つの<code>provider</code>設定を並べ、異なる行を自分で探します。</li>
+        <li><b>手順3：</b>この章で触る窓口の宣言を、先に Manifest で読みます。</li>
+        <li><b>手順4：</b>非公開の画面を <code>am start</code> で開きます（ターミナル）。</li>
+        <li><b>手順5：</b>2つの Provider を Attacker から読みます（Attackerアプリ）。</li>
       </ol>
-      最後に手順5でManifestを開き、結果を変えた1行を確認します。
+      手順3で読んだ数行が、手順4と手順5で「到達できるか」を決めます。
+      <br><br>
+      <b>手順4と手順5は、どの操作も「予測を記録してから1回だけ実行する」順で進めてください。</b>
+      予測を入れるまで、その手順の結果例と解説は開きません。
     </div>
 
-    <h3>3. もう1つの画面を外から開いてみる</h3>
-<pre><code>adb shell am start -n com.example.insecureappplatform/.InsecureStorageActivity</code></pre>
-    <div class="learn-step" data-step="ch2-s3"></div>
-<pre class="out"><code>Permission Denial: starting Intent { cmp=com.example.insecureappplatform/.InsecureStorageActivity }
-from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
+    <h3>3. まず Manifest を読む</h3>
+    <p>ここから先は、操作の前に結果を予測して記録します。<b>予測には根拠が要ります。</b>
+    根拠は1つのファイルにまとまっています。この章で触る窓口は、
+    <code>AndroidManifest.xml</code> に全部宣言されているからです。先に開いてください。</p>
+    <p>まず画面（Activity）を数えます。</p>
+<pre><code>grep -A2 "&lt;activity" app/src/main/AndroidManifest.xml \
+  | grep -oE 'android:(name|exported)="[^"]*"'</code></pre>
+<pre class="out"><code>android:name=".MainActivity"
+android:exported="true"
+android:name=".InsecureStorageActivity"
+android:exported="false"
+...
+android:name=".AuthActivity"
+android:exported="false"
+android:name=".AdminActivity"
+android:exported="true"
+...</code></pre>
+    <p>画面は9つありますが、<code>exported="true"</code> は2つだけです。
+    1つはランチャーアイコンから起動される <code>MainActivity</code>、
+    もう1つが <b>Basic 手順1で外から開いた <code>AdminActivity</code></b> です。
+    第2章のもう1枚の画面 <code>AuthActivity</code>（ログイン画面）は <code>false</code> になっています。</p>
+
+    <p>次に、データの窓口（Provider）を並べます。</p>
+<pre><code>grep -A4 "&lt;provider" app/src/main/AndroidManifest.xml</code></pre>
+<pre class="out"><code>&lt;provider
+    android:name=".SessionProvider"
+    android:authorities="com.example.insecureappplatform.session"
+    android:exported="true" /&gt;
+--
+&lt;provider
+    android:name=".ProtectedSessionProvider"
+    android:authorities="com.example.insecureappplatform.session.protected"
+    android:exported="true"
+    android:permission="com.example.insecureappplatform.permission.READ_SESSION" /&gt;</code></pre>
+    <p>どちらも <code>exported="true"</code> で、違うのは
+    <code>android:permission</code> の1行があるかないかだけです。
+    中身のクラスも同じで、<code>ProtectedSessionProvider</code> は
+    <code>SessionProvider</code> をそのまま継承しているだけです。</p>
+
+    <div class="callout note">
+      <strong>Manifest で分かるのは「誰が呼べるか」までです</strong><br>
+      <b>呼んだ結果どんなデータが返るかは、ここには書いてありません。</b>
+      <code>authorities</code> は窓口の名前であって、中身の目録ではないからです。
+      返る中身は実装側にあり、それが Basic 手順2で読んだ
+      <code>SessionProvider</code> の4行でした。<br><br>
+      このあとの手順4と手順5で予測するのは、<b>到達できるかどうか</b>のほうです。
+      予測の理由欄には「Manifest のどの行を見たか」を書いてください。
+    </div>
+
+    <p class="who">この Manifest はビルド後の APK にも入っています。
+    ソースを持たない相手でも、APK を展開すれば同じものを読めます。
+    端末側から数える方法は Advanced 手順8 にあります。
+    <b>窓口の名前を推測しにくくしても、隠したことにはなりません。</b></p>
+
+    <h3>4. 同じ章の非公開の画面を外から開いてみる</h3>
+    <p>Basic 手順1で開いた管理者コンソールは <code>exported="true"</code> でした。
+    第2章にはもう1枚、<code>"false"</code> の画面があります。ログイン画面 (<code>AuthActivity</code>) です。
+    同じコマンドで、そちらを開きます。</p>
+<pre><code>adb shell am start -n com.example.insecureappplatform/.AuthActivity</code></pre>
+    <div class="learn-step" data-step="ch2-s4"></div>
+    <div class="after-step">
+<pre class="out"><code>Starting: Intent { cmp=com.example.insecureappplatform/.AuthActivity }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { ... } from null
+(pid=10642, uid=2000) not exported from uid 10185</code></pre>
 
     <div class="callout blocked">
       <strong>これは OS が止めた</strong><br>
-      同じ <code>am start</code>、同じアプリなのに、片方は開いて片方は止まります。
-      違いは <code>AndroidManifest.xml</code> の <code>android:exported</code> の値だけです。
-      止めた側も <code>not exported from uid 10175</code> と、誰のものかを見て弾いたことを言っています。
+      同じ <code>am start</code>、同じアプリの同じ章の画面なのに、片方は開いて片方は止まります。
+      違いは手順3で読んだ <code>android:exported</code> の値だけです。
+      止めた側も <code>not exported from uid ...</code> と、誰のものかを見て弾いたことを言っています。
+      末尾の数字は被害者アプリの UID で、端末やインストールのたびに変わります。
       判定しているのはアプリのコードではなく、<b>ActivityManager（システム側）</b>です。
     </div>
 
-    <h3>4. 本編：Providerを攻撃者アプリから比較する</h3>
-    <p>まずAttackerアプリの<b>P3</b>を押し、ボタンの下に出るログを確認します。</p>
+    <div class="callout note">
+      <strong>ここで言えるのは「到達できる」までです</strong><br>
+      管理者コンソールが開いたことは、<b>認証を突破したことではありません</b>。
+      この教材のログイン画面は <code>Login Success</code> と表示するだけで、
+      管理者コンソールへ遷移しません。2つの画面はコードの上ではつながっていないので、
+      <b>越えるべき関門がそもそも実装されていません</b>。<br><br>
+      確かめたのは「<code>exported</code> な画面には外から到達できる」ことだけです。
+      実際のアプリで同じことが起きたとき、そこから先に何ができるかは、
+      その画面が何を表示し何を実行するかを見て<b>別に判定します</b>。
+      <b>到達と実行は分けて数えてください。</b>
+    </div>
+    </div>
+
+    <h3>5. 本編：Providerを攻撃者アプリから比較する</h3>
+    <p>ここからは Attacker アプリで操作します。手順4 までと違い、
+    <b>adb ではなく、権限を何も持たない普通のサードパーティアプリ</b>が呼び出す側になります。
+    操作は2つ。<b>どちらも予測を記録してから、1回だけ実行してください。</b></p>
+
+    <p><b>操作1：無防備な窓口を読む。</b>
+    Basic 手順2で <code>content query</code> から読んだのと同じ
+    <code>SessionProvider</code> を、今度は別アプリから呼びます。
+    Attacker アプリの <b>P3</b> がこの操作です。</p>
     <div class="learn-step" data-step="ch2-p3"></div>
 
-    <p>次に<b>P4</b>を押します。P3と同じデータを読む操作ですが、こちらの窓口には入場券が必要です。
-    P4の結果を見たあと、<b>P4b</b>で入場券が実際に付与されたか確認します。</p>
+    <p><b>操作2：permission を付けた窓口を読む。</b>
+    <code>ProtectedSessionProvider</code> を呼びます。読みにいくデータは操作1 と同じで、
+    クラスの中身も同じです。Attacker アプリの <b>P4</b> がこの操作です。</p>
     <div class="learn-step" data-step="ch2-p4"></div>
 
-    <h3>5. Manifest 側で答え合わせをする</h3>
-<pre><code>grep -A3 "provider" \
-  app/src/main/AndroidManifest.xml</code></pre>
-    <p>P3 と P4 の Provider は <b>中身のクラスが同じ</b>（<code>ProtectedSessionProvider</code> は
-    <code>SessionProvider</code> をそのまま継承しているだけです）。違いは Manifest の1行だけです。</p>
-<pre class="out"><code>&lt;provider android:name=".SessionProvider"
-    android:authorities="...session"
-    android:exported="true" /&gt;
-
-&lt;provider android:name=".ProtectedSessionProvider"
-    android:authorities="...session.protected"
-    android:exported="true"
-    android:permission="com.example.insecureappplatform.permission.READ_SESSION" /&gt;</code></pre>
-
+    <div class="after-step">
     <div class="callout note">
       <strong>攻撃を止めたのはコードではない</strong><br>
       P4 が止まったのは Java/Kotlin のコードのおかげではなく、
-      Manifest に書いた1行と、それを見て <b>ContentResolver がプロセスをまたぐ前に</b>
+      手順3で読んだ <code>android:permission</code> の1行と、それを見て
+      <b>ContentResolver がプロセスをまたぐ前に</b>
       チェックしているおかげです。防御はアプリの中ではなく、境界の上にあります。
+    </div>
     </div>
 
     <h3>6. 直す</h3>
@@ -418,7 +505,7 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
       <code>role</code> に <code>admin</code> 以外を弾いても、攻撃者は <code>admin</code> を送ってきます。
       値の検証は、到達を絞ったあとの二重化としては意味がありますが、単独では防御になりません。</p>
       <p>6つ目は<b>いちばん危ない誤答</b>です。ブロードキャストの受信処理では、
-      <code>Binder.getCallingUid()</code> は送信元の UID を返さないため、送信元の確認には使えません（Standard 手順7 の囲みを参照）。
+      <code>Binder.getCallingUid()</code> は送信元の UID を返さないため、送信元の確認には使えません。
       「送信元を確認している」ように見えるコードが書けてしまい、実際には誰でも通ります。
       止めるのは <code>exported</code> か receiver の <code>permission</code> の側です。</p>
     </details>

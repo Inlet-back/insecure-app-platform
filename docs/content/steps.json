@@ -43,16 +43,16 @@
     "misconception": "「鍵が抜けない = 復号されない」。抜けなくても、使わせることはできる。",
     "if_wrong": "手順10 と手順11 で、攻撃者がどこにいるかが違うことを確認する。前者はファイルの外、後者はプロセスの中。同じ root でも、ファイルを読んで終わるか、そこから先へ進むかで結果が変わる。防御は「効く/効かない」ではなく「誰に効くか」で決まる。"
   },
-  "ch2-s3": {
+  "ch2-s4": {
     "chapter": "ch2",
-    "title": "別の画面を am start で開く",
-    "setup": "AdminActivity は am start で開けた。次は InsecureStorageActivity を同じ方法で開いてみる。",
-    "action": "ターミナルで実行する:\nadb shell am start -n com.example.insecureappplatform/.InsecureStorageActivity",
+    "title": "同じ章の非公開の画面を外から開いてみる",
+    "setup": "管理者コンソール (AdminActivity) は am start で開いた。第2章にはもう1枚、ログイン画面 (AuthActivity) がある。手順3 で読んだ Manifest では、前者が exported=\"true\"、後者が \"false\" になっていた。同じコマンドで後者を開く。",
+    "action": "ターミナルで実行する:\nadb shell am start -n com.example.insecureappplatform/.AuthActivity",
     "question": "開くか。",
     "answer": "ng",
-    "why": "同じコマンド、同じアプリなのに片方は開き片方は止まる。違いは Manifest の android:exported の値だけ。判定しているのはアプリのコードではなく ActivityManager、つまりシステム側のプロセス。防御はアプリの中ではなく境界の上にある。",
-    "misconception": "「アプリが自分でチェックしている」。していない。アプリのコードは一行も走らずに止まる。",
-    "if_wrong": "AndroidManifest.xml で2つの activity 要素を見比べる。差が exported の一行だけであることを確認する。"
+    "why": "同じコマンド、同じアプリ、同じ章の画面なのに結果が割れる。違いは Manifest の android:exported の値だけで、それは手順3 で先に読んである。判定しているのはアプリのコードではなく ActivityManager、つまりシステム側のプロセス。防御はアプリの中ではなく境界の上にある。ここで «確かめられたこと» の範囲に注意する。言えるのは「exported な画面には外から到達できる」までで、それ以上ではない。このアプリのログイン画面は Login Success と表示するだけで管理者コンソールへ遷移しないので、2つの画面はコードの上ではつながっていない。画面が開いたことは、認証を突破したことでも、その画面の操作が実行できたことでもない。到達と実行は別に判定する。",
+    "misconception": "「アプリが自分でチェックしている」。していない。アプリのコードは一行も走らずに止まる。もう1つ、「片方が非公開なのだから、もう片方も何かに守られているはず」。exported は宣言ごとに独立していて、隣の宣言は保護にならない。",
+    "if_wrong": "AndroidManifest.xml で AuthActivity と AdminActivity の2つの activity 要素を見比べる。差が exported の一行だけであることを確認する。"
   },
   "ch2-p3": {
     "chapter": "ch2",

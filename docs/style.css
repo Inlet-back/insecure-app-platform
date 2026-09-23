@@ -417,6 +417,21 @@ td.blank {
 /* 予測・実行前に、直後の「実行結果例」で答えが見えないようにする。 */
 .learn-step.predict + pre.out,
 .learn-step.observe + pre.out { display: none; }
+
+/*
+  結果例の «次» に置いた解説も、予測前は答えそのものになる。
+  予測後に読むものは .after-step で «ひとまとめに» 包み、手順のすぐ後ろに置く。
+  結果例の pre.out も、その中に入れること。
+
+  隣接 (+) で受けているのは意図的。一般兄弟 (~) にすると、前の手順が未予測の間は
+  同じ節の «後ろの手順» の解説まで巻き添えで消える。手順を飛ばした人が
+  以降ずっと白紙を見ることになるので、掛かる範囲は直後の1ブロックに閉じる。
+
+  包む中身は本文（囲み・段落・表・結果例）だけにすること。
+  記録用のフォームは .learn-step の中にあり、ここには入れない。
+*/
+.learn-step.predict + .after-step,
+.learn-step.observe + .after-step { display: none; }
 .learn-q { font-weight: 600; margin: 10px 0; }
 .learn-mine { font-size: 14px; }
 .learn-lead { font-weight: 600; margin: 12px 0 6px; }

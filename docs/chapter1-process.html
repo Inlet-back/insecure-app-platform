@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第1章 プロセス境界 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922i">
-<script src="nav.js?v=20260922i" defer></script>
-<script src="ui.js?v=20260922i" defer></script>
-<script src="learn.js?v=20260922i" defer></script>
+<link rel="stylesheet" href="style.css?v=20260923a">
+<script src="nav.js?v=20260923a" defer></script>
+<script src="ui.js?v=20260923a" defer></script>
+<script src="learn.js?v=20260923a" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -307,6 +307,7 @@
     <h3>4. <code>run-as</code> を外して、同じことをする</h3>
 <pre><code>adb shell cat /data/data/com.example.insecureappplatform/shared_prefs/user_session.xml</code></pre>
     <div class="learn-step" data-step="ch1-s4"></div>
+    <div class="after-step">
 <pre class="out"><code>cat: /data/data/com.example.insecureappplatform/shared_prefs/user_session.xml: Permission denied</code></pre>
 
     <div class="callout blocked">
@@ -320,6 +321,7 @@
     <p>ディレクトリを覗こうとしても同じです。</p>
 <pre><code>adb shell ls /data/data</code></pre>
 <pre class="out"><code>ls: /data/data: Permission denied</code></pre>
+    </div>
 
     <h3>5. 誰が持ち主なのかを見る</h3>
     <p>アプリごとに別のユーザー ID が割り当てられていることを確認します。</p>
@@ -345,8 +347,12 @@ package:com.example.insecureappplatform uid:10175</code></pre>
 <pre><code># 未インストールなら
 ./gradlew :attacker:installDebug</code></pre>
 
-    <p>Attacker アプリを起動して、上から順に押します。</p>
+    <p>Attacker アプリを起動します。押すのは <b>P1「被害者の shared_prefs を直接読む」</b>で、
+    <b>予測を記録してから1回だけ</b>実行してください。
+    結果を記録したあと、対照実験として <b>P2「自分の shared_prefs を読む」</b>を押します。
+    ほかのボタンはこの章の操作ではありません。</p>
     <div class="learn-step" data-step="ch1-p1"></div>
+    <div class="after-step">
     <div class="callout blocked">
       <strong>P1 が失敗するのが正しい</strong><br>
       P1 が赤く出ると、たいていの人はまず自分の書いたコードを疑います。ですが攻撃者アプリのバグではありません。
@@ -370,6 +376,7 @@ package:com.example.insecureappplatform uid:10175</code></pre>
       UID の分離・ファイル権限（DAC）・SELinux が重なって効いているからです。
       エラーの文言は<b>この端末で観測した症状</b>であって、隔離の理由そのものではありません。
       報告書に書くなら、どの端末のどのバージョンで何が返ったかまで添えてください。
+    </div>
     </div>
 
 
@@ -407,13 +414,16 @@ package:com.example.insecureappplatform uid:10175</code></pre>
 <pre><code>adb root
 adb shell cat /data/data/com.example.insecureappplatform/shared_prefs/user_session_secure.xml</code></pre>
     <div class="learn-step" data-step="ch1-s10"></div>
+    <div class="after-step">
     <p>暗号化されたままで、読めません。<b>ファイルを読み出す経路に対しては、暗号化がちゃんと効いています</b>。
     ただし、ここで止まるかどうかは攻撃者が決めることです。手順11 へ進みます。</p>
+    </div>
 
     <h3>11. アプリの中から読む</h3>
 <pre><code># アプリを前面に出したまま、リポジトリのルートで実行する
 frida -U -F -l tools/frida/ch1-read-encrypted-prefs.js</code></pre>
     <div class="learn-step" data-step="ch1-s11"></div>
+    <div class="after-step">
 <pre class="out"><code>=== user_session_secure (復号済み) ===
   username = alice
   password = P@ssw0rd123
@@ -429,6 +439,7 @@ frida -U -F -l tools/frida/ch1-read-encrypted-prefs.js</code></pre>
       守っているのは「端末やファイルだけを奪われた場合」であって、
       「アプリのプロセスに入り込める相手」ではありません。<br>
       鍵の<b>保持</b>と鍵の<b>使用</b>は別の話です。これは第4章でもう一度扱います。
+    </div>
     </div>
 
     <h3>12. 修正案を比べる</h3>

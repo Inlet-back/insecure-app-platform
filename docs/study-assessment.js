@@ -17,6 +17,30 @@
     localStorage.setItem(STORE_KEY, JSON.stringify(saved));
   }
 
+  /* 回答を1項目1件のイベントとして送る。研究モードが無効なら record() が何もしない。
+     送るのは選択した値と確信度だけで、自由記述は持たせない。 */
+  function sendAnswers(instruments, instrument, background, answers, confidence) {
+    const api = window.InsecureStudy;
+    if (!api) return;
+    instruments.background.forEach((item) => {
+      if (background[item.id] == null) return;
+      api.record("assessment_submit", {
+        item_id: item.id,
+        response: background[item.id],
+        metadata: { phase, item_kind: "background" },
+      });
+    });
+    instrument.items.forEach((item) => {
+      api.record("assessment_submit", {
+        item_id: item.id,
+        response: String(answers[item.id]),
+        confidence: confidence[item.id],
+        metadata: { phase, item_kind: "item" },
+      });
+    });
+    void api.flush();
+  }
+
   function addHeading(text, description) {
     const heading = document.createElement("h2");
     heading.textContent = text;
@@ -130,6 +154,7 @@
           confidence[item.id] = Number(formData.get(`${item.id}-confidence`));
         });
         saveAnswers({ submitted_at: new Date().toISOString(), background, answers, confidence });
+        sendAnswers(instruments, instrument, background, answers, confidence);
         event.currentTarget.hidden = true;
         byId("assessment-actions").hidden = true;
         message.hidden = false;

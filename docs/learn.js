@@ -249,7 +249,12 @@
         chapter_id: q.chapter,
         item_id: q.id,
         response: unknown ? "unknown" : labels[idx],
-        metadata: { matched: correct, practice_phase: phase() },
+        metadata: {
+          matched: correct,
+          practice_phase: phase(),
+          // どの誤解を選んだか。正誤だけでは «どこで» つまずいたかが残らない。
+          misconception: unknown ? "unknown" : q.options[idx].tag,
+        },
       });
       el.innerHTML = `
         <div class="learn-head">
@@ -811,9 +816,17 @@ ${teach}`;
       : rec.observed == null ? ["予測済み・未確認", "pending"]
       : rec.matched ? ["的中", "hit"] : ["外した", "miss"];
 
-    const done = Object.values(s.predictions).filter((r) => r.observed != null);
+    // steps.json にもう無い ID の記録。設問の中身が変わった手順は ID ごと差し替えるので、
+    // 古い記録が孤児として残る。これを新しい設問の回答として並べてはいけないし、
+    // steps[id] を引きにいって落ちてもいけない。
+    const orphan = (id) => !steps[id];
+    const missed = Object.entries(s.predictions)
+      .filter(([id, r]) => !orphan(id) && r.observed != null && !r.matched);
+    const orphans = Object.keys(s.predictions).filter(orphan);
+    const done = Object.entries(s.predictions)
+      .filter(([id, r]) => !orphan(id) && r.observed != null)
+      .map(([, r]) => r);
     const hit = done.filter((r) => r.matched).length;
-    const missed = Object.entries(s.predictions).filter(([, r]) => r.observed != null && !r.matched);
 
     const pre = s.quiz.filter((q) => q.phase === "pre");
     const post = s.quiz.filter((q) => q.phase === "post");
@@ -866,6 +879,10 @@ ${teach}`;
       ${missed.length ? `<h3>外した手順（＝誤解が表に出た場所）</h3><ul>${missed.map(([id, r]) =>
         `<li><code>${esc(id)}</code> ${esc(steps[id].title)}<br>
          <span class="learn-note">予測 ${r.guess}${r.reason ? ` — ${esc(r.reason)}` : ""}</span></li>`).join("")}</ul>` : ""}
+      ${orphans.length ? `<h3>いまの教材にない手順の記録</h3>
+        <p class="learn-note">設問が差し替わった手順です。記録は消していませんが、
+        いまの手順の回答としては数えていません（上の的中率にも入っていません）。</p>
+        <ul>${orphans.map((id) => `<li><code>${esc(id)}</code></li>`).join("")}</ul>` : ""}
 
       <h2>概念テスト</h2>
       ${s.quiz.length ? `<table class="matrix"><tr><th>日時</th><th>範囲</th><th>種類</th><th>点</th></tr>

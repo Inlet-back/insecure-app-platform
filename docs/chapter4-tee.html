@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第4章 Android Keystoreと鍵の使用 | InsecureAppPlatform</title>
-<link rel="stylesheet" href="style.css?v=20260922i">
-<script src="nav.js?v=20260922i" defer></script>
-<script src="ui.js?v=20260922i" defer></script>
-<script src="learn.js?v=20260922i" defer></script>
+<link rel="stylesheet" href="style.css?v=20260923a">
+<script src="nav.js?v=20260923a" defer></script>
+<script src="ui.js?v=20260923a" defer></script>
+<script src="learn.js?v=20260923a" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -246,10 +246,12 @@
 <pre class="out"><code>package:/data/app/~~xxxx==/com.example.insecureappplatform-yyyy==/base.apk</code></pre>
     <p>この長いパスは端末ごとに違うので、打ち写さず、そのまま取り出します。</p>
     <div class="learn-step" data-step="ch4-s2"></div>
+    <div class="after-step">
 <pre><code>adb pull "$(adb shell pm path com.example.insecureappplatform | sed 's/package://' | tr -d '\r')" base.apk
 unzip -p base.apk 'classes*.dex' | strings | grep -iE "1234567890abcdef|AES/ECB"</code></pre>
 <pre class="out"><code>1234567890abcdef
 AES/ECB/PKCS5Padding</code></pre>
+    </div>
 
     <h3>3. 手元で復号する</h3>
 <pre><code>echo -n '&lt;アプリが出した Base64&gt;' | base64 -d | \
@@ -299,8 +301,10 @@ AES/ECB/PKCS5Padding</code></pre>
     <h3>6. APK の中を同じ方法で探す</h3>
 <pre><code>unzip -p base.apk 'classes*.dex' | strings | grep -i "tee_demo_key"</code></pre>
     <div class="learn-step" data-step="ch4-s6"></div>
+    <div class="after-step">
     <p>出てくるのは<b>鍵の名前（alias）だけ</b>で、鍵そのものは入っていません。
     鍵は生成された瞬間から Keystore の中にあり、アプリのコードにも変数にも現れません。</p>
+    </div>
 
     <h3>7. 鍵がどこにあるか調べる</h3>
     <p>アプリの <b>「鍵がどこにあるか調べる」</b> を押します。</p>
@@ -336,6 +340,7 @@ TEE や StrongBox にあるとは限らない。エミュレータでは SOFTWAR
 <pre><code># Keystore 画面を前面に出したまま、リポジトリのルートで実行する
 frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
     <div class="learn-step" data-step="ch4-s10"></div>
+    <div class="after-step">
 <pre class="out"><code>[*] 鍵ハンドルを取得: android.security.keystore2.AndroidKeyStoreSecretKey
 [*] 鍵の中身 getEncoded() = null  ← null なら取り出せていない
 [*] 復号結果 = himitsu-no-memo
@@ -349,6 +354,7 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
       そのアプリに許された<b>鍵の使用</b>まで拒否するものではないからで、
       使用の可否を決めているのは「そのアプリとして動けるか」、つまりプロセスの話であり、
       第1章の話に戻ってきます。
+    </div>
     </div>
 
     <h3>11. 使用にも条件を付ける</h3>
@@ -382,6 +388,7 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
     <p>同じことを Frida からもやります。手順10 のスクリプトは2本の鍵を順に試すので、
     認証なしの鍵は通り、認証つきの鍵は断られます。</p>
     <div class="learn-step" data-step="ch4-s11"></div>
+    <div class="after-step">
 
     <div class="callout blocked">
       <strong>何が変わったのか</strong><br>
@@ -400,6 +407,7 @@ frida -U -F -l tools/frida/ch4-use-keystore-key.js</code></pre>
       <b>攻撃に必要な前提</b>のほうです。
       「プロセスに入れば復号できる」が「プロセスに入り、かつ利用者に認証させれば取れる」に変わりました。
       <a href="surface-map.html">攻撃面マップ</a>で ● が ◐ になる、というのがこれです。
+    </div>
     </div>
 
     <h3>11b. 失敗の種類を読み分ける</h3>

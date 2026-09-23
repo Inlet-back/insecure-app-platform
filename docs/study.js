@@ -11,10 +11,13 @@
     "prediction_submit", "observation_submit", "practice_quiz_start",
     "practice_quiz_answer", "practice_quiz_complete", "chapter_complete",
     "hint_open", "answer_open", "ai_prompt_copy", "technical_error",
+    "assessment_submit",
   ]);
   const META_KEYS = new Set([
     "page", "matched", "expected", "practice_phase", "score", "total",
     "error_kind", "network_state", "referrer_kind",
+    // 誤解タグ。どの筋で間違えたかが分かる。正誤だけでは分からない。
+    "misconception", "phase", "item_kind",
   ]);
   const sessionId = uuid();
   const pageStarted = performance.now();
@@ -94,24 +97,33 @@
     return true;
   }
 
+  /* queue が空になるまで送り切る。1回の呼び出しで1バッチだけ送ると、
+     テストの回答のように一度に何件も積まれたとき残りが滞留し、
+     «そのままタブを閉じた参加者の回答が届かない» ことになる。 */
   async function flush() {
     if (flushing || !enabled()) return;
-    const state = load();
-    if (state.consent !== "granted" || !state.queue.length) return;
     flushing = true;
-    const batch = state.queue.slice(0, 50);
     try {
-      await fetch(config.endpoint, {
-        method: "POST",
-        mode: "no-cors",
-        cache: "no-store",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ study_id: config.study_id, events: batch }),
-      });
-      const latest = load();
-      const sent = new Set(batch.map((event) => event.event_id));
-      latest.queue = latest.queue.filter((event) => !sent.has(event.event_id));
-      save(latest);
+      for (;;) {
+        const state = load();
+        if (state.consent !== "granted" || !state.queue.length) break;
+        const batch = state.queue.slice(0, 50);
+        /* no-cors だと応答が読めない。受け口が落ちていて 502 が返っても
+           «届いた» と区別できず、queue から消してしまう。
+           受け口は CORS を許可しているので、普通のリクエストにして応答を見る。
+           Content-Type が text/plain なので preflight は起きない。 */
+        const response = await fetch(config.endpoint, {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ study_id: config.study_id, events: batch }),
+        });
+        if (!response.ok) throw new Error(`受け口が ${response.status} を返した`);
+        const latest = load();
+        const sent = new Set(batch.map((event) => event.event_id));
+        latest.queue = latest.queue.filter((event) => !sent.has(event.event_id));
+        save(latest);
+      }
     } catch (_) {
       // オフライン時はqueueを残し、onlineイベントまたは次の操作で再送する。
     } finally {
@@ -143,12 +155,13 @@
     save(latest);
   }
 
+  /* テストは同梱の study-assessment.html で行う。
+     回答は assessment_submit イベントとして、章内のログと同じ経路で送る。
+     外部フォーム（Google Forms 等）には依存しない。 */
   function formUrl(phase) {
     const state = load();
     if (state.consent !== "granted" || !state.participant_id) return null;
-    if (!enabled()) return `study-assessment.html?phase=${encodeURIComponent(phase)}`;
-    const params = new URLSearchParams({ action: "form", phase, participant_id: state.participant_id });
-    return `${config.endpoint}?${params}`;
+    return `study-assessment.html?phase=${encodeURIComponent(phase)}`;
   }
 
   function status() {
@@ -201,10 +214,25 @@
       return status();
     });
 
+  /* ページを離れる瞬間の fetch は打ち切られる。sendBeacon なら離脱後も送られる。
+     送れたことを確認できないので、queue はそのまま残して次回に再送させる。
+     受け側は event_id で重複を落とす。 */
+  function beacon() {
+    if (!enabled() || !navigator.sendBeacon) return;
+    const state = load();
+    if (state.consent !== "granted" || !state.queue.length) return;
+    const body = new Blob(
+      [JSON.stringify({ study_id: config.study_id, events: state.queue.slice(0, 50) })],
+      { type: "text/plain;charset=utf-8" },
+    );
+    navigator.sendBeacon(config.endpoint, body);
+  }
+
   window.addEventListener("online", () => { void flush(); });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") void flush();
+    if (document.visibilityState === "hidden") { void flush(); beacon(); }
   });
+  window.addEventListener("pagehide", beacon);
   document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("details").forEach((details, index) => {
       details.addEventListener("toggle", () => {
