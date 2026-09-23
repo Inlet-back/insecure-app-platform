@@ -12,9 +12,22 @@
   <div class="os-switch" data-os-switch></div>
 
   <section class="layer basic">
-    <h2><span class="layer-tag">手順1</span>ExtraのAPKを作る</h2>
-    <p>Extraの2つは配布物に入っていません。Coreと同じソース一式の中にあるので、そこでビルドします。
-    ビルドと同時にエミュレータへ入るので、<code>adb install</code> は要りません。</p>
+    <h2><span class="layer-tag">手順1</span>Extraの2つを入れる</h2>
+    <p>Coreの3つとは別枠で、Extra用のAPKを2つ配っています。Coreの2つを消す必要はありません。</p>
+<pre><code>adb install -r squeeze-debug.apk
+adb install -r squeeze-attacker-debug.apk</code></pre>
+    <div class="learn-actions">
+      <a class="learn-btn" href="https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-debug.apk">Squeeze（.apk）</a>
+      <a class="learn-btn" href="https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-attacker-debug.apk">Squeeze Lab（.apk）</a>
+    </div>
+    <p class="learn-note">落とすところから通しで貼りたい場合は、
+    <a href="../../setup.html#s8">環境構築の手順8</a> にコマンドがあります。</p>
+
+    <details class="hint">
+      <summary>ソースからビルドして入れる場合</summary>
+      <p>ソース一式の中の <code>squeeze/</code> からビルドできます。署名鍵はCoreと同じ
+      <code>keys/</code> を使うので、配っているAPKと同じ鍵になり、上書きで入れ直せます。
+      ビルドと同時にエミュレータへ入るので <code>adb install</code> は要りません。</p>
   <div data-os="mac">
 <pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 ./gradlew :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
@@ -23,7 +36,7 @@
 <pre><code>$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
 .\gradlew.bat :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
   </div>
-    <p class="learn-note">署名鍵はCoreと同じ <code>keys/</code> を使います。Coreの2つを消す必要はありません。</p>
+    </details>
 
     <h2><span class="layer-tag">手順2</span>4つのアプリが共存していることを確認する</h2>
     <pre><code>adb shell pm list packages -U | grep -E "insecureappplatform|attacker"</code></pre>

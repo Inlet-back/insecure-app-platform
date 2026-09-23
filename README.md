@@ -39,10 +39,11 @@ GitHub が自動で付ける **Source code (zip)** と `git clone` は使わな�
 Core（第1〜4章）を終えた人向けの、任意の演習です。画面の名前が課題になっている教材用アプリではなく、
 商品を選んで買い、会員情報を登録し、ギフト残高を持つ1つの EC アプリを相手に、同じ4つの境界を確かめます。
 
-**配布する3点には入っていません。**ソース一式から自分でビルドしてください。
+APK は Releases に、Core の3点とは**別枠**で置いています（`squeeze-debug.apk` /
+`squeeze-attacker-debug.apk`）。ソース一式の `squeeze/` からビルドしても同じものになります。
 
 ```sh
-./gradlew :squeeze:assembleDebug :squeeze-attacker:assembleDebug
+./gradlew :squeeze:installDebug :squeeze-attacker:installDebug
 ```
 
 Core のアプリとは別のパッケージなので、同じエミュレータに4つ並べて入れられます。

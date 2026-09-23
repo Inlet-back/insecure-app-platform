@@ -277,20 +277,44 @@ frida-ps -Ua | head     # アプリが一覧に出れば準備完了</code></pre
     そこに保存したデータを消さずに追加できます。
   </div>
 
-  <p>Extra の2つは APK を配っていません。手順1 で展開したソース一式の中に
-  <code>squeeze/</code> が入っているので、そこからビルドします。
-  ビルドと同時にエミュレータへ入るので <code>adb install</code> は要りません。</p>
+  <p>Extra の APK は<b>手順1 の3つとは別枠</b>です。Extra をやる人だけ、この2つを落とします。
+  手順1 のフォルダ（リポジトリのルート）で実行してください。</p>
 
   <div data-os="mac">
 <pre><code>cd ~/ws/InsecureAppPlatform-*/
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-./gradlew :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-debug.apk
+curl -LO https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-attacker-debug.apk
+adb install -r squeeze-debug.apk
+adb install -r squeeze-attacker-debug.apk</code></pre>
   </div>
   <div data-os="win">
 <pre><code>cd (Get-ChildItem -Directory $HOME\ws\InsecureAppPlatform-*)[0]
-$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
-.\gradlew.bat :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-debug.apk -OutFile squeeze-debug.apk
+Invoke-WebRequest https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-attacker-debug.apk -OutFile squeeze-attacker-debug.apk
+adb install -r squeeze-debug.apk
+adb install -r squeeze-attacker-debug.apk</code></pre>
   </div>
+
+  <p>ブラウザから落とすなら、この2つをクリックしてください。</p>
+  <div class="learn-actions">
+    <a class="learn-btn" href="https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-debug.apk">Squeeze（.apk）</a>
+    <a class="learn-btn" href="https://github.com/Inlet-back/insecure-app-platform/releases/latest/download/squeeze-attacker-debug.apk">Squeeze Lab（.apk）</a>
+  </div>
+
+  <details class="hint">
+    <summary>ソースからビルドして入れる場合</summary>
+    <p>手順1 で展開したソース一式の中に <code>squeeze/</code> が入っています。
+    ビルドと同時にエミュレータへ入るので <code>adb install</code> は要りません。
+    配っている APK と同じ鍵で署名されるので、上書きで入れ直せます。</p>
+    <div data-os="mac">
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+./gradlew :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+    </div>
+    <div data-os="win">
+<pre><code>$env:JAVA_HOME = (Get-Item "C:\Program Files\Eclipse Adoptium\jdk-17*").FullName
+.\gradlew.bat :squeeze:installDebug :squeeze-attacker:installDebug</code></pre>
+    </div>
+  </details>
 
   <p>4つのアプリが別々に並べば入っています。</p>
   <div data-os="mac">
@@ -308,6 +332,13 @@ package:com.example.squeeze.attacker</code></pre>
     <strong>署名は Core と同じ鍵です</strong><br>
     Squeeze は被害者アプリと同じ鍵、Squeeze Lab は攻撃者アプリと同じ鍵で署名されます。
     第2章で見た signature permission の実験が、Extra 側でもそのまま成立します。
+    <div data-os="mac">
+<pre><code>shasum -a 256 squeeze-debug.apk squeeze-attacker-debug.apk</code></pre>
+    </div>
+    <div data-os="win">
+<pre><code>Get-FileHash squeeze-debug.apk,squeeze-attacker-debug.apk -Algorithm SHA256</code></pre>
+    </div>
+    Releases のページの Extra の節に載せた sha256 と一致することを確かめてください。
   </div>
 
   <p>Extra のデータだけを消したいときはこれを実行します。Core の記録とアプリデータには触れません。</p>
