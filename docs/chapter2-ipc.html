@@ -314,6 +314,19 @@ Row: 1 key=password, value=P@ssw0rd123</code></pre>
 
     <h3>3. もう1つの画面を外から開いてみる</h3>
 <pre><code>adb shell am start -n com.example.insecureappplatform/.InsecureStorageActivity</code></pre>
+    <details class="hint" id="attacker-activity-flow">
+      <summary>補足：Attackerから画面を開く操作との違いは？（P5・P6）</summary>
+      <p>この手順ではターミナルを使います。AttackerのP5・P6も画面の起動を要求しますが、
+      呼び出す側はshellではなく、別UIDの通常アプリになります。</p>
+      <ol>
+        <li>Attackerが起動したい画面の名前を指定したIntentを作ります。</li>
+        <li><code>startActivity()</code> でAndroidに起動を要求します。</li>
+        <li>呼び出しが戻ったか、例外が出たかを表示します。実際の画面表示は対象アプリ側で確認します。</li>
+      </ol>
+      <p>P5は管理者画面、P6は非公開の画面との比較用です。
+      <b>起動要求が例外なしで戻ったことと、画面上の操作が成功したことは別です。</b>
+      この手順では資料に書かれたターミナル操作を行い、P5・P6の追加実行は必須ではありません。</p>
+    </details>
     <div class="learn-step" data-step="ch2-s3"></div>
 <pre class="out"><code>Permission Denial: starting Intent { cmp=com.example.insecureappplatform/.InsecureStorageActivity }
 from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
@@ -328,10 +341,40 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
 
     <h3>4. 本編：Providerを攻撃者アプリから比較する</h3>
     <p>まずAttackerアプリの<b>P3</b>を押し、ボタンの下に出るログを確認します。</p>
+    <details class="hint" id="attacker-provider-flow">
+      <summary>補足：Attackerは何をしている？（P3）</summary>
+      <p><b>処理の流れ：</b>Attacker → Providerへの問い合わせ → 対象アプリが返すデータ → Attackerの表示。</p>
+      <ol>
+        <li>AttackerがProviderの宛先URIを指定し、<code>ContentResolver.query()</code> を呼びます。</li>
+        <li>呼び出しが許可されると、対象アプリの <code>SessionProvider</code> が
+        自分の <code>user_session</code> を読み、結果を返します。</li>
+        <li>Attackerが返された行を読み、項目名と値を表示します。</li>
+      </ol>
+      <p>第1章のP1ではAttackerがファイルを直接開こうとしました。
+      P3では<b>データを持つアプリ自身に読ませます</b>。
+      同じデータでも、誰がファイルを読むかが変わっています。</p>
+      <p><b>見るところ：</b>返された件数と内容です。0件なら、呼び出しから空の結果が返っています。
+      アクセス拒否とは区別し、対象アプリでテストデータを保存済みか確認してください。</p>
+    </details>
     <div class="learn-step" data-step="ch2-p3"></div>
 
     <p>次に<b>P4</b>を押します。P3と同じデータを読む操作ですが、こちらの窓口には入場券が必要です。
     P4の結果を見たあと、<b>P4b</b>で入場券が実際に付与されたか確認します。</p>
+    <details class="hint" id="attacker-permission-flow">
+      <summary>補足：P4とP4bは、それぞれ何を調べる？</summary>
+      <p><b>P4はデータの問い合わせです。</b>P3と同じAPIを使い、
+      permission付きの <code>ProtectedSessionProvider</code> を宛先にします。
+      Attackerは返されたデータ、または呼び出し時の例外を表示します。</p>
+      <p><b>P4bは権限と署名の照会です。</b>データを読む操作とは別に、次の3点をAndroidの情報から調べます。</p>
+      <ul>
+        <li>AttackerのManifestにpermissionの要求が書かれているか。</li>
+        <li>そのpermissionが実際にAttackerへ付与されているか。</li>
+        <li>Attackerと対象アプリの署名が一致するか。</li>
+      </ul>
+      <p><b>使う順序：</b>予測を記録してP4を実行し、結果を確認したあとにP4bを使います。
+      permissionを要求したことと、付与されたことを分けて読んでください。
+      P4bは状態を調べるだけで、permissionを付与する操作ではありません。</p>
+    </details>
     <div class="learn-step" data-step="ch2-p4"></div>
 
     <h3>5. Manifest 側で答え合わせをする</h3>
@@ -391,6 +434,20 @@ from ... (pid=5428, uid=2000) not exported from uid 10175</code></pre>
   <!-- ===================== ⑤⑥ 対策の判定と射程 ===================== -->
   <div class="verdict" id="verdict">
     <h2>対策は効いたか。どこまで守るか</h2>
+    <details class="hint" id="attacker-receiver-flow">
+      <summary>補足：設定変更のボタンは何をしている？（P7・P7b／任意）</summary>
+      <p>Providerがデータを問い合わせる窓口なのに対し、この教材のReceiverは設定変更のメッセージを受け取る窓口です。
+      本編のP3・P4を終えるために、P7・P7bを追加実行する必要はありません。</p>
+      <ol>
+        <li>Attackerが対象アプリ宛てのIntentに変更内容を入れます。</li>
+        <li><code>sendBroadcast()</code> でAndroidへ送信を依頼します。</li>
+        <li>送信処理が戻ったことを表示します。対象Receiverから受信・変更完了の通知が返る仕組みではありません。</li>
+      </ol>
+      <p>P7bはpermission付きの窓口との比較用です。
+      <b>ログの「送信できた」と、対象の設定が変わったことを区別してください。</b>
+      設定変更の結果を見る場所は対象アプリの管理画面です。
+      状態が変わらなかった場合も、それだけでは配送されなかったとは断定できません。</p>
+    </details>
     <p>この章の窓口に対しては、次のような修正案がよく出てきます。
     <b>どれが本当に効くのかを判定するのは、あなたです。</b>
     攻撃側（P3〜P7）は一切変えずに、Manifest だけを動かして確かめてください。</p>
