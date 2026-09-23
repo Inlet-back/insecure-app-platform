@@ -351,6 +351,27 @@ package:com.example.insecureappplatform uid:10175</code></pre>
     <b>予測を記録してから1回だけ</b>実行してください。
     結果を記録したあと、対照実験として <b>P2「自分の shared_prefs を読む」</b>を押します。
     ほかのボタンはこの章の操作ではありません。</p>
+    <details class="hint" id="attacker-file-flow">
+      <summary>補足：Attackerは何をしている？（P0・P1・P2）</summary>
+      <p>Attackerは、対象アプリとは別のUIDで動くアプリです。
+      各ボタンは次の処理を行い、戻ってきた値や例外を表示します。</p>
+      <dl>
+        <dt>P0：UIDを比べる</dt>
+        <dd>自分のUIDを取得し、Androidに対象アプリのUIDを問い合わせます。
+        表示するのは2つの数値で、この操作では保存ファイルを読みません。</dd>
+        <dt>P1：対象のファイルを直接読む</dt>
+        <dd>対象アプリの <code>user_session.xml</code> のパスを指定し、
+        <code>File.readText()</code> で開こうとします。
+        読もうとするのはAttacker自身です。対象アプリに読み取りを頼む処理はありません。</dd>
+        <dt>P2：自分のファイルを読む</dt>
+        <dd>Attacker自身の保存領域にあるテスト用ファイルを読みます。
+        ファイルがなければテスト用の文字列を書いてから読みます。
+        P1と同じ読み取りAPIを使いますが、ファイルの持ち主が異なります。</dd>
+      </dl>
+      <p><b>見るところ：</b>ファイルの内容が返ったか、例外が返ったかを確認します。
+      <code>ENOENT</code> だけでは、未作成なのかアクセス経路の制限なのかを判定できません。
+      対象アプリで保存したことと、P2の結果も合わせて考えてください。</p>
+    </details>
     <div class="learn-step" data-step="ch1-p1"></div>
     <div class="after-step">
     <div class="callout blocked">
