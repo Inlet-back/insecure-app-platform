@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>研究参加 | InsecureAppPlatform</title>
 <link rel="stylesheet" href="style.css?v=20260923a">
-<script src="nav.js?v=20260923a" defer></script>
+<script src="nav.js?v=20260923post4" defer></script>
 <script src="ui.js?v=20260923a" defer></script>
 <script src="study.js?v=20260923a" defer></script>
-<script src="study-page.js?v=20260923a" defer></script>
+<script src="study-page.js?v=20260923post4" defer></script>
 </head>
 <body>
 <nav class="topnav" data-nav></nav>
@@ -16,6 +16,14 @@
 <main>
   <h1>研究参加</h1>
   <p class="subtitle">教材の利用と、研究データの提供は別です</p>
+
+  <section id="after-workshop">
+    <h2>勉強会を終えた方へ</h2>
+    <p>ご参加ありがとうございました。研究に参加する方は、サイドバーの「勉強会後の回答」から始めてください。
+    事後テストの回答後、そのまま実施状況アンケートへ進みます。</p>
+    <p>事前に回答したときと同じ端末・ブラウザを使ってください。事前未回答でも事後から参加できます。
+    学習前の状態を思い出して事前テストを埋める必要はありません。初めて参加する方は下の説明を確認して同意してください。</p>
+  </section>
 
   <div id="study-status" class="callout note">研究への参加は任意です。参加しなくても教材を利用できます。</div>
 
@@ -25,7 +33,7 @@
 
     <h3>収集するもの</h3>
     <ul>
-      <li>匿名の参加者ID、経験区分、テスト回答と確信度</li>
+      <li>匿名の参加者ID、経験区分、テスト回答と確信度、事後アンケートの選択式回答</li>
       <li>教材内の予測・実測、章の開始・完了、ヒント閲覧、所要時間</li>
       <li>技術エラーの分類</li>
     </ul>
@@ -65,7 +73,16 @@
       <button class="learn-btn" id="study-copy-id">IDをコピー</button>
     </div>
 
-    <h2>最初に学習前テストへ回答してください</h2>
+    <h2>勉強会後の回答</h2>
+    <p>事後テストは教材・AIを見ずに、今の考えで回答してください。扱っていない内容は「分からない」を選べます。
+    続く研究アンケートでは、実際に扱った章、実習・実演、行った活動、途中で止まった理由を確認します。全項目任意です。
+    回答後、参加者IDと結び付かない匿名の勉強会アンケートへ進みます。</p>
+    <div class="learn-actions">
+      <a class="learn-btn" id="study-after" href="#">事後テストから始める</a>
+    </div>
+    <p id="study-post-status" class="learn-note"></p>
+
+    <h2>まだ学習を始めていない方へ</h2>
     <p>Androidセキュリティの知識を問う試験ではありません。現在の経験と、5つの短い場面で直感に近い答えを選びます。</p>
     <div class="learn-actions">
       <a class="learn-btn" id="study-pre" href="#">学習前テストを始める</a>
@@ -75,8 +92,8 @@
     <ol>
       <li>学習前テストに回答する</li>
       <li><a href="intro-sandbox.html">教材を始める</a></li>
-      <li><a id="study-post" href="#">学習直後テスト</a>に回答する</li>
-      <li>約7日後に<a id="study-delayed" href="#">遅延テスト</a>へ回答する</li>
+      <li>「勉強会後の回答」から事後テスト、実施状況アンケート、匿名の勉強会アンケートの順に回答する</li>
+      <li>主催者から案内があった場合のみ、約7日後に<a id="study-delayed" href="#">遅延テスト</a>へ回答する</li>
     </ol>
 
     <div class="callout note" id="study-queue-status">

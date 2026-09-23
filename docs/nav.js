@@ -17,6 +17,11 @@
     { href: "chapter4-tee.html", label: "Ch4: Keystoreと鍵の使用" },
     { href: "surface-map.html", label: "攻撃面マップ" },
     { href: "closing.html", label: "終章" },
+    {
+      href: "study-assessment.html?phase=post",
+      label: "勉強会後の回答",
+      active: ["study-assessment.html?phase=post", "study-assessment.html?phase=survey"],
+    },
     { href: "progress.html", label: "記録" },
     { href: "extras/squeeze/index.html", label: "Extra: Squeeze" },
     { href: "https://github.com/Inlet-back/insecure-app-platform", label: "リポジトリ" },
@@ -32,7 +37,7 @@
     if (/^https?:/.test(page.href)) { a.target = "_blank"; a.rel = "noopener"; }
     if (isBrand) a.className = "brand";
     // 「今いるページ」に印を付ける。色は CSS 側が付ける
-    else if (page.href === here) a.setAttribute("aria-current", "page");
+    else if ((page.active || [page.href]).includes(here + location.search)) a.setAttribute("aria-current", "page");
     return a;
   }
 

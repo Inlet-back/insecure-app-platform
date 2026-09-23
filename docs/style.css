@@ -463,6 +463,7 @@ td.blank {
 .learn-rubric { display: block; margin: 8px 0; font-size: 14px; }
 
 .learn-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.learn-actions[hidden] { display: none; }
 .learn-btn {
   border: 1px solid var(--accent);
   background: var(--accent);
