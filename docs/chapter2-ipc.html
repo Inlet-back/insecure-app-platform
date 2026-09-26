@@ -49,44 +49,58 @@
       窓口を開けるのは普通の使い方です。決めるのは<b>誰に開けるか</b>のほうです。</p>
     <details class="hint chapter-detail">
       <summary>仕組みを詳しく読む（図・問答・用語）</summary>
-    <figure class="fig">
-      <svg viewBox="0 0 720 270" role="img" aria-label="外からの呼び出しが Binder とシステム側の判定を通ってからアプリのコードに届くことを示した図">
-        <rect class="card" x="16" y="60" width="140" height="80" rx="6"/>
-        <text class="t-b" x="30" y="90">呼び出し元</text>
-        <text class="t-sm" x="30" y="112">別のアプリ / adb</text>
-
-        <rect class="plate" x="188" y="60" width="130" height="80" rx="6"/>
-        <text class="t-b" x="202" y="90">Binder</text>
-        <text class="t-sm" x="202" y="112">uid を添えて渡す</text>
-
-        <rect class="plate" x="350" y="60" width="180" height="80" rx="6"/>
-        <text class="t-b" x="364" y="90">システム側の判定</text>
-        <text class="t-sm" x="364" y="112">ActivityManager ほか</text>
-
-        <rect class="wall" x="562" y="60" width="142" height="80" rx="6"/>
-        <text class="t-b" x="576" y="90">アプリのコード</text>
-        <text class="t-sm" x="576" y="112">ここで初めて動く</text>
-
-        <line class="flow" x1="156" y1="100" x2="182" y2="100"/>
-        <polygon points="186,100 176,95 176,105" fill="var(--text-muted)"/>
-        <line class="flow" x1="318" y1="100" x2="344" y2="100"/>
-        <polygon points="348,100 338,95 338,105" fill="var(--text-muted)"/>
-        <line class="pass" x1="530" y1="100" x2="556" y2="100"/>
-        <polygon points="560,100 550,95 550,105" fill="var(--success)"/>
-
-        <line class="flow dash" x1="440" y1="180" x2="440" y2="144"/>
-        <polygon points="440,140 435,150 445,150" fill="var(--text-muted)"/>
-        <rect class="card" x="326" y="182" width="228" height="62" rx="6"/>
-        <text class="t-sm" x="340" y="206">判定が見るのはこの2行だけ</text>
-        <text class="t-sm mono" x="340" y="228">exported / permission</text>
-
-        <text class="t-sm" x="16" y="206">アプリのコードは、呼ばれたことすら</text>
-        <text class="t-sm" x="16" y="226">知らないまま弾かれることがあります。</text>
-      </svg>
-      <figcaption>
-        外からの呼び出しは、アプリのコードに届く前にシステム側で判定されます。
-        判定の材料は Manifest に書いた2行で、アプリのコードではありません。
-      </figcaption>
+    <figure class="fig mechanism-figure">
+      <h3>ファイルの壁を越えずに、窓口から保存値が漏れる</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="ファイルの壁を越えずに、窓口から保存値が漏れる。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 470" role="img" aria-labelledby="d5-title d5-desc">
+          <title id="d5-title">ファイルの壁を越えずに、窓口から保存値が漏れる</title>
+          <desc id="d5-desc">別アプリの直接読み取りは境界で拒否される。一方、query 要求は公開された Provider へ届き、Provider が自分の権限でファイルを読む。保存値は Provider に戻り、さらに別アプリへ返される。</desc>
+          <defs><marker id="d5-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d5-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d5-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="341" y="35" width="423" height="367" rx="12" class="zone"/>
+          <text x="361" y="64" class="bold" text-anchor="start">教材アプリ / UID A</text>
+          <rect x="36" y="166" width="130" height="100" rx="12" class="app"/>
+          <rect x="84" y="180" width="34" height="29" rx="6" class="icon"/>
+          <path d="M91 189 h20 M91 198 h14" class="edge"/>
+          <text x="101" y="233" class="bold" text-anchor="middle">別アプリ</text>
+          <text x="101" y="255" class="small" text-anchor="middle">UID B</text>
+          <path d="M568 98 h149 l24 24 v88 h-173 Z" class="file"/>
+          <path d="M717 98 v24 h24" class="edge"/>
+          <text x="580" y="137" class="small bold" text-anchor="start">user_session.xml</text>
+          <text x="580" y="162" class="small mono" text-anchor="start">username=demo</text>
+          <text x="580" y="184" class="small mono" text-anchor="start">password=demo</text>
+          <path d="M101 160 V120 H325" class="request" marker-end="url(#d5-request)"/>
+          <circle cx="341" cy="120" r="14" class="stop-disc"/>
+          <path d="M335 114 l12 12 M347 114 l-12 12" class="stop-mark"/>
+          <text x="152" y="102" class="small" text-anchor="start">直接ファイルを読む</text>
+          <text x="236" y="150" class="blocked bold" text-anchor="start">拒否</text>
+          <rect x="322" y="215" width="39" height="70" rx="2" class="opening"/>
+          <circle cx="434" cy="249" r="51" class="port"/>
+          <text x="434" y="245" class="small bold" text-anchor="middle">Session</text>
+          <text x="434" y="266" class="small bold" text-anchor="middle">Provider</text>
+          <path d="M171 240 H374" class="request" marker-end="url(#d5-request)"/>
+          <circle cx="201" cy="216" r="12" class="number-disc"/>
+          <text x="201" y="221" class="number" text-anchor="middle">1</text>
+          <text x="226" y="220" class="small mono" text-anchor="start">query()</text>
+          <path d="M434 194 V145 H561" class="request" marker-end="url(#d5-request)"/>
+          <circle cx="459" cy="122" r="12" class="number-disc"/>
+          <text x="459" y="127" class="number" text-anchor="middle">2</text>
+          <text x="486" y="128" class="small" text-anchor="start">読む</text>
+          <path d="M654 217 V331 H434 V307" class="data" marker-end="url(#d5-data)"/>
+          <circle cx="580" cy="350" r="12" class="number-disc"/>
+          <text x="580" y="355" class="number" text-anchor="middle">3</text>
+          <text x="604" y="355" class="data-label" text-anchor="start">保存値</text>
+          <path d="M380 270 H247 V320 H103 V274" class="data" marker-end="url(#d5-data)"/>
+          <circle cx="287" cy="296" r="12" class="number-disc"/>
+          <text x="287" y="301" class="number" text-anchor="middle">4</text>
+          <text x="134" y="351" class="data-label bold" text-anchor="start">保存値を返す</text>
+          <text x="341" y="443" class="small" text-anchor="middle">開いている窓口：exported=true / permission 指定なし</text>
+        </svg>
+      </div>
+      <figcaption>①別アプリが問い合わせる → ②Provider が自分の権限で読む → ③保存値を受け取る → ④別アプリへ返す。ファイルの権限は変わっていません。exported や permission で制限するのは①の入口です。</figcaption>
     </figure>
 
     <div class="qa">

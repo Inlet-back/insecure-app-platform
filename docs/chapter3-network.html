@@ -51,43 +51,68 @@
     この章で見るのは、その普通の通信で<b>何がどこに置かれ、誰が判断しているのか</b>のほうです。</p>
     <details class="hint chapter-detail">
       <summary>仕組みを詳しく読む（図・問答・用語）</summary>
-    <figure class="fig">
-      <svg viewBox="0 0 720 280" role="img" aria-label="端末とサーバの間に第三者がいる経路と、検証を OS とアプリのどちらが決めているかを示した図">
-        <rect class="wall" x="16" y="40" width="150" height="70" rx="6"/>
-        <text class="t-b" x="30" y="70">端末（アプリ）</text>
-        <text class="t-sm" x="30" y="92">ここまでは OS が守る</text>
-
-        <rect class="plate" x="210" y="40" width="180" height="70" rx="6"/>
-        <text class="t-b" x="224" y="70">経路上の第三者</text>
-        <text class="t-sm" x="224" y="92">Wi-Fi / ルータ / Burp</text>
-
-        <rect class="wall" x="434" y="40" width="150" height="70" rx="6"/>
-        <text class="t-b" x="448" y="70">サーバ</text>
-        <text class="t-sm mono" x="448" y="92">10.0.2.2</text>
-
-        <line class="flow" x1="166" y1="76" x2="204" y2="76"/>
-        <polygon points="208,76 198,71 198,81" fill="var(--text-muted)"/>
-        <line class="flow" x1="390" y1="76" x2="428" y2="76"/>
-        <polygon points="432,76 422,71 422,81" fill="var(--text-muted)"/>
-
-        <text class="t-ng" x="210" y="134">この箱に OS の隔離は届きません</text>
-
-        <rect class="card" x="16" y="160" width="330" height="86" rx="6"/>
-        <text class="t-b" x="30" y="188">OS がやること</text>
-        <text class="t-sm" x="30" y="210">証明書の連なりをたどり、</text>
-        <text class="t-sm" x="30" y="230">起点の CA を信じているか確かめる</text>
-
-        <rect class="card" x="374" y="160" width="330" height="86" rx="6"/>
-        <text class="t-b" x="388" y="188">アプリが決めること</text>
-        <text class="t-sm" x="388" y="210">どのストアを信じると宣言するか、</text>
-        <text class="t-sm" x="388" y="230">自分でも照合するか</text>
-
-        <text class="t-sm" x="16" y="272">暗号の強さは、この図のどこにも出てきません。</text>
-      </svg>
-      <figcaption>
-        端末の外に出た時点で、OS の隔離は効きません。
-        検証を実行するのは OS ですが、何を信じるかを決めているのはアプリ側の書き方です。
-      </figcaption>
+    <figure class="fig mechanism-figure">
+      <h3>HTTPS の本文が見えるのは、暗号化の両端</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="HTTPS の本文が見えるのは、暗号化の両端。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 551" role="img" aria-labelledby="d6-title d6-desc">
+          <title id="d6-title">HTTPS の本文が見えるのは、暗号化の両端</title>
+          <desc id="d6-desc">HTTP は経路上で本文が見える。サーバまで TLS 接続する HTTPS は経路上で暗号文だけが見える。中継者の証明書をアプリが受け入れると、中継者が TLS の終端となり、平文を読んでから別の TLS 接続へ送れる。</desc>
+          <defs><marker id="d6-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d6-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d6-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <text x="56" y="35" class="bold" text-anchor="start">アプリ</text>
+          <text x="369" y="35" class="bold" text-anchor="middle">経路上の第三者</text>
+          <text x="684" y="35" class="bold" text-anchor="start">サーバ</text>
+          <rect x="42" y="74" width="56" height="75" rx="8" class="device"/>
+          <path d="M59 137 h22" class="edge"/>
+          <rect x="704" y="74" width="56" height="75" rx="5" class="server"/>
+          <path d="M715 91 h34 M715 104 h34" class="edge"/>
+          <text x="40" y="60" class="small bold" text-anchor="start">HTTP</text>
+          <rect x="42" y="222" width="56" height="75" rx="8" class="device"/>
+          <path d="M59 285 h22" class="edge"/>
+          <rect x="704" y="222" width="56" height="75" rx="5" class="server"/>
+          <path d="M715 239 h34 M715 252 h34" class="edge"/>
+          <text x="40" y="208" class="small bold" text-anchor="start">HTTPS</text>
+          <rect x="42" y="384" width="56" height="75" rx="8" class="device"/>
+          <path d="M59 447 h22" class="edge"/>
+          <rect x="704" y="384" width="56" height="75" rx="5" class="server"/>
+          <path d="M715 401 h34 M715 414 h34" class="edge"/>
+          <text x="40" y="370" class="small bold" text-anchor="start">HTTPS を中継</text>
+          <path d="M102 108 H697" class="data" marker-end="url(#d6-data)"/>
+          <rect x="238" y="82" width="224" height="43" rx="4" class="packet"/>
+          <text x="350" y="108" class="mono" text-anchor="middle">password=demo</text>
+          <circle cx="555" cy="131" r="12" class="person"/>
+          <path d="M532 176 v-12 q0 -17 23 -17 q23 0 23 17 v12 Z" class="person"/>
+          <text x="555" y="200" class="small bold" text-anchor="middle">本文が見える</text>
+          <path d="M548 122 V110" class="data"/>
+          <rect x="115" y="224" width="575" height="63" rx="28" class="tunnel"/>
+          <path d="M125 256 H681" class="request" marker-end="url(#d6-request)"/>
+          <text x="355" y="262" class="cipher mono" text-anchor="middle">8f 2a 91 c7 …</text>
+          <path d="M622 250 v-8 a11 11 0 0 1 22 0 v8" class="lock-shackle"/>
+          <rect x="615" y="250" width="36" height="29" rx="5" class="lock-body"/>
+          <circle cx="633" cy="262" r="3" class="lock-hole"/>
+          <path d="M633 263 v7" class="lock-shackle"/>
+          <circle cx="555" cy="310" r="12" class="person"/>
+          <path d="M532 355 v-12 q0 -17 23 -17 q23 0 23 17 v12 Z" class="person"/>
+          <text x="555" y="379" class="small bold" text-anchor="middle">本文は読めない</text>
+          <path d="M550 288 V302" class="ghost"/>
+          <text x="356" y="304" class="small" text-anchor="middle">正しいサーバまで暗号化</text>
+          <rect x="111" y="386" width="201" height="62" rx="25" class="tunnel"/>
+          <rect x="439" y="386" width="251" height="62" rx="25" class="tunnel"/>
+          <path d="M121 418 H319" class="request" marker-end="url(#d6-request)"/>
+          <path d="M443 418 H683" class="request" marker-end="url(#d6-request)"/>
+          <circle cx="374" cy="382" r="12" class="person"/>
+          <path d="M351 427 v-12 q0 -17 23 -17 q23 0 23 17 v12 Z" class="person"/>
+          <text x="374" y="451" class="small bold" text-anchor="middle">中継者</text>
+          <text x="219" y="423" class="cipher" text-anchor="middle">暗号文</text>
+          <text x="566" y="423" class="cipher" text-anchor="middle">別の暗号文</text>
+          <text x="374" y="492" class="data-label bold" text-anchor="middle">ここで復号 → 本文が見える</text>
+          <text x="401" y="527" class="small" text-anchor="middle">中継者の証明書をアプリが受け入れた場合</text>
+        </svg>
+      </div>
+      <figcaption>青い帯が TLS の暗号化区間です。中継者の証明書を拒否すれば、その相手との接続は本文を送る前に止まります。下段は証明書の検証条件を満たす中継者を受け入れた場合です。</figcaption>
     </figure>
 
     <div class="qa">

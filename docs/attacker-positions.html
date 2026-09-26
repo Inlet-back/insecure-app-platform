@@ -203,8 +203,8 @@
 
     <h3>強い順に一直線には並びません</h3>
 
-    <p>ここまでの6枚は、上から下へ強くなっていくように読めます。端末の中に限ればそのとおりで、
-    普通のアプリより <code>adb shell</code> が広く、その上に root があります。ここは段になっています。</p>
+    <p>ここまでの6枚は、上から下へ強くなっていくように読めます。ただし、
+    別アプリ・<code>adb shell</code>・root は使える権限が異なり、対象や操作によって結果も変わります。</p>
 
     <p>一方で、通信路にいる人は端末の中のファイルに一切届きませんし、
     root を取った人も、経路を流れる暗号文をそのまま読めるわけではありません。
@@ -247,46 +247,76 @@
       「root がなければプロセス内に入れない」とは読まないでください。
     </div>
 
-    <p>7枚を並べると、こうなります。端末の外に3つ、中に4つで、中の3つは段になっています。</p>
+    <p>7つの立場を、入手できるものと必要な条件で並べ直します。</p>
 
-    <figure class="fig">
-      <svg viewBox="0 0 720 250" role="img" aria-label="端末の外の2つの立場と、端末の中で段になっている4つの立場を並べた図">
-        <rect class="plate" x="8" y="8" width="704" height="234" rx="10"/>
-
-        <text class="t-sm" x="28" y="36">端末の外</text>
-        <rect class="card" x="28" y="46" width="180" height="46" rx="6"/>
-        <text class="t-b" x="42" y="68">APK だけ持っている</text>
-        <text class="t-sm" x="42" y="84">コードは全部。値は1つもない</text>
-
-        <rect class="card" x="28" y="104" width="180" height="46" rx="6"/>
-        <text class="t-b" x="42" y="126">通信路にいる人</text>
-        <text class="t-sm" x="42" y="142">出ていくものだけ</text>
-
-        <rect class="card" x="28" y="162" width="180" height="46" rx="6"/>
-        <text class="t-b" x="42" y="184">取得済みファイル</text>
-        <text class="t-sm" x="42" y="200">端末の上では何もできない</text>
-
-        <line class="flow dash" x1="238" y1="30" x2="238" y2="226"/>
-        <text class="t-sm" x="246" y="36">端末の中</text>
-
-        <rect class="card" x="268" y="46" width="200" height="40" rx="6"/>
-        <text class="t-b" x="282" y="71">同じ端末の普通のアプリ</text>
-
-        <rect class="card" x="268" y="98" width="200" height="40" rx="6"/>
-        <text class="t-b" x="282" y="123">開発者の口（adb shell）</text>
-
-        <rect class="card" x="268" y="150" width="200" height="40" rx="6"/>
-        <text class="t-b" x="282" y="175">root / OS を侵害</text>
-
-        <rect class="card" x="498" y="150" width="190" height="40" rx="6"/>
-        <text class="t-b" x="512" y="175">動いているアプリの中</text>
-        <path class="block" d="M470 170 h20"/>
-        <text class="t-sm" x="498" y="212">本教材では root の先。一般には</text>
-        <text class="t-sm" x="498" y="228">Gadget や再署名でも到達しうる</text>
-
-        <text class="t-sm" x="268" y="226">上の2つは、下の段へ自動では上がれません</text>
-      </svg>
-      <figcaption>立場は7つ。端末の中の3つは段になっていて、外の3つは別の軸に立っています。</figcaption>
+    <figure class="fig mechanism-figure">
+      <h3>攻撃者がいる場所を、端末・アプリ・通信路に置く</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="攻撃者がいる場所を、端末・アプリ・通信路に置く。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 555" role="img" aria-labelledby="d8-title d8-desc">
+          <title id="d8-title">攻撃者がいる場所を、端末・アプリ・通信路に置く</title>
+          <desc id="d8-desc">1 は端末の外にある APK、2 は端末とサーバの通信路、3 は取得済みファイル。端末内では 4 の別アプリが対象アプリの外、5 は adb shell、6 は root や OS の権限。7 だけは対象アプリのプロセス内にいる。数字は権限の強さを表さない。</desc>
+          <defs><marker id="d8-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d8-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d8-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="276" y="48" width="317" height="430" rx="26" class="device"/>
+          <text x="294" y="78" class="bold" text-anchor="start">Android 端末</text>
+          <rect x="369" y="183" width="201" height="198" rx="12" class="zone"/>
+          <text x="384" y="210" class="bold" text-anchor="start">対象アプリ</text>
+          <path d="M458 263 h72 l24 24 v88 h-96 Z" class="file"/>
+          <path d="M530 263 v24 h24" class="edge"/>
+          <text x="470" y="302" class="small bold" text-anchor="start">保存値</text>
+          <text x="470" y="327" class="small mono" text-anchor="start">demo</text>
+          <rect x="689" y="112" width="71" height="89" rx="6" class="server"/>
+          <path d="M700 131 H748 M700 149 H748" class="edge"/>
+          <text x="725" y="224" class="small" text-anchor="middle">サーバ</text>
+          <path d="M577 190 H681" class="request" marker-end="url(#d8-request)"/>
+          <circle cx="634" cy="78" r="12" class="person"/>
+          <path d="M611 123 v-12 q0 -17 23 -17 q23 0 23 17 v12 Z" class="person"/>
+          <text x="634" y="147" class="small bold" text-anchor="middle">通信路</text>
+          <circle cx="610" cy="49" r="12" class="number-disc"/>
+          <text x="610" y="54" class="number" text-anchor="middle">2</text>
+          <path d="M634 132 V174" class="leader"/>
+          <path d="M30 54 h119 l24 24 v88 h-143 Z" class="file"/>
+          <path d="M149 54 v24 h24" class="edge"/>
+          <text x="42" y="93" class="small bold" text-anchor="start">APK</text>
+          <text x="42" y="118" class="small mono" text-anchor="start">code / res</text>
+          <circle cx="27" cy="44" r="12" class="number-disc"/>
+          <text x="27" y="49" class="number" text-anchor="middle">1</text>
+          <text x="102" y="196" class="small bold" text-anchor="middle">APK だけ</text>
+          <path d="M180 112 H260" class="leader"/>
+          <path d="M32 348 h119 l24 24 v88 h-143 Z" class="file"/>
+          <path d="M151 348 v24 h24" class="edge"/>
+          <text x="44" y="387" class="small bold" text-anchor="start">コピー</text>
+          <text x="44" y="412" class="small mono" text-anchor="start">保存ファイル</text>
+          <circle cx="27" cy="340" r="12" class="number-disc"/>
+          <text x="27" y="345" class="number" text-anchor="middle">3</text>
+          <text x="103" y="491" class="small bold" text-anchor="middle">取得済みファイル</text>
+          <path d="M180 404 H250" class="leader"/>
+          <circle cx="318" cy="245" r="24" class="app"/>
+          <text x="318" y="251" class="bold" text-anchor="middle">別</text>
+          <circle cx="294" cy="215" r="12" class="number-disc"/>
+          <text x="294" y="220" class="number" text-anchor="middle">4</text>
+          <path d="M344 245 H365" class="request" marker-end="url(#d8-request)"/>
+          <text x="318" y="291" class="small" text-anchor="middle">別アプリ</text>
+          <rect x="296" y="106" width="138" height="44" rx="6" class="terminal"/>
+          <text x="365" y="134" class="small mono" text-anchor="middle">$ adb shell</text>
+          <circle cx="284" cy="111" r="12" class="number-disc"/>
+          <text x="284" y="116" class="number" text-anchor="middle">5</text>
+          <text x="295" y="441" class="mono bold" text-anchor="start"># root / OS</text>
+          <circle cx="282" cy="419" r="12" class="number-disc"/>
+          <text x="282" y="424" class="number" text-anchor="middle">6</text>
+          <circle cx="411" cy="246" r="12" class="number-disc"/>
+          <text x="411" y="251" class="number" text-anchor="middle">7</text>
+          <text x="411" y="321" class="small" text-anchor="middle">アプリ内</text>
+          <path d="M571 340 H641 V369" class="leader"/>
+          <text x="621" y="400" class="small" text-anchor="start">⑦ はこの枠の内側</text>
+          <text x="621" y="424" class="small" text-anchor="start">復号後の値にも届く</text>
+          <text x="400" y="530" class="small" text-anchor="middle">①〜③：手元の資料・通信　　④〜⑦：端末上で操作する立場</text>
+        </svg>
+      </div>
+      <figcaption>番号は立場の対応で、強さの順ではありません。⑥root から⑦アプリ内へは別の操作が必要です。教材では Frida を使いますが、アプリ内に入る経路は root に限りません。</figcaption>
     </figure>
   </section>
 

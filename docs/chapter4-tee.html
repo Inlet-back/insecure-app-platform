@@ -51,52 +51,56 @@
       <b>使われるかどうかは端末次第なので、この章では実測値を表示して確かめます。</b></p>
     <details class="hint chapter-detail">
       <summary>仕組みを詳しく読む（図・問答・用語）</summary>
-    <figure class="fig">
-      <svg viewBox="0 0 720 300" role="img" aria-label="アプリのプロセスから Keystore への3つの依頼のうち、鍵の持ち出しだけが止まることを示した図">
-        <rect class="plate" x="16" y="40" width="290" height="230" rx="8"/>
-        <text class="t-b" x="34" y="68">アプリのプロセス</text>
-        <text class="t-sm" x="34" y="88">攻撃者に取られうる側</text>
-
-        <text class="t" x="34" y="128">① 作って</text>
-        <text class="t-sm mono" x="34" y="148">KeyGenParameterSpec</text>
-
-        <text class="t" x="34" y="182">② 鍵をください</text>
-        <text class="t-sm mono" x="34" y="202">getEncoded()</text>
-
-        <text class="t" x="34" y="236">③ 復号して</text>
-        <text class="t-sm mono" x="34" y="256">cipher.doFinal()</text>
-
-        <rect class="wall" x="420" y="40" width="284" height="230" rx="8"/>
-        <text class="t-b" x="438" y="68">Android Keystore</text>
-        <text class="t-sm" x="438" y="88">中はアプリから見えない</text>
-
-        <rect class="card" x="438" y="110" width="248" height="56" rx="6"/>
-        <text class="t-sm" x="452" y="134">鍵の本体</text>
-        <text class="t-sm mono" x="452" y="154">alias = tee_demo_key</text>
-
-        <text class="t-sm" x="438" y="204">頼まれた計算はやってくれる</text>
-        <text class="t-sm" x="438" y="230">ただし鍵そのものは渡さない</text>
-
-        <line class="pass" x1="312" y1="140" x2="410" y2="140"/>
-        <polygon points="414,140 404,135 404,145" fill="var(--success)"/>
-        <text class="t-ok" x="330" y="132">通る</text>
-
-        <line class="block" x1="312" y1="194" x2="348" y2="194"/>
-        <line class="block" x1="356" y1="184" x2="376" y2="204"/>
-        <line class="block" x1="376" y1="184" x2="356" y2="204"/>
-        <text class="t-ng" x="326" y="186">止まる</text>
-
-        <line class="pass" x1="312" y1="248" x2="410" y2="248"/>
-        <polygon points="414,248 404,243 404,253" fill="var(--success)"/>
-        <text class="t-ok" x="330" y="240">通る</text>
-
-        <text class="t-sm" x="16" y="292">止まるのは真ん中の1本だけです。上と下は、頼めば通ります。</text>
-      </svg>
-      <figcaption>
-        鍵に関わる操作は、生成・持ち出し・使用の3つです。
-        Keystore が引き受けているのは保管で、依頼そのものを断る仕組みではありません
-        （断らせたい場合は、手順11 で条件を付けます）。
-      </figcaption>
+    <figure class="fig mechanism-figure">
+      <h3>鍵は外へ出ない。復号した平文はアプリへ戻る</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="鍵は外へ出ない。復号した平文はアプリへ戻る。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 490" role="img" aria-labelledby="d7-title d7-desc">
+          <title id="d7-title">鍵は外へ出ない。復号した平文はアプリへ戻る</title>
+          <desc id="d7-desc">右の Keystore 側に鍵素材が残り、アプリの getEncoded は null を返す。アプリから暗号文を復号へ渡すことはでき、呼び出し元と鍵の使用条件を満たせば平文がアプリへ戻る。</desc>
+          <defs><marker id="d7-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d7-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d7-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="33" y="43" width="285" height="382" rx="12" class="zone"/>
+          <text x="54" y="76" class="bold" text-anchor="start">アプリのプロセス</text>
+          <rect x="493" y="43" width="274" height="382" rx="18" class="vault"/>
+          <text x="513" y="76" class="bold" text-anchor="start">Android Keystore</text>
+          <rect x="580" y="107" width="94" height="86" rx="9" class="chip"/>
+          <rect x="594" y="122" width="66" height="56" rx="5" class="chip-core"/>
+          <path d="M598 107 v-9 M598 193 v9" class="edge"/>
+          <path d="M618 107 v-9 M618 193 v9" class="edge"/>
+          <path d="M638 107 v-9 M638 193 v9" class="edge"/>
+          <path d="M658 107 v-9 M658 193 v9" class="edge"/>
+          <circle cx="609" cy="150" r="11" class="key-shape"/>
+          <path d="M620 150 h38 m-8 0 v11 m-12 -11 v8" class="key-line"/>
+          <text x="627" y="227" class="small" text-anchor="middle">鍵素材はこの側に残る</text>
+          <rect x="56" y="105" width="128" height="40" rx="5" class="entity"/>
+          <text x="120" y="131" class="small" text-anchor="middle">鍵の参照</text>
+          <text x="56" y="177" class="small mono" text-anchor="start">getEncoded()</text>
+          <text x="56" y="203" class="blocked bold" text-anchor="start">→ null</text>
+          <path d="M569 130 H509" class="key-line"/>
+          <circle cx="493" cy="130" r="14" class="stop-disc"/>
+          <path d="M487 124 l12 12 M499 124 l-12 12" class="stop-mark"/>
+          <path d="M477 130 H328" class="ghost"/>
+          <text x="401" y="109" class="small" text-anchor="middle">鍵素材の持ち出し</text>
+          <path d="M53 229 h134 l24 24 v88 h-158 Z" class="file"/>
+          <path d="M187 229 v24 h24" class="edge"/>
+          <text x="65" y="268" class="small bold" text-anchor="start">暗号文</text>
+          <text x="65" y="293" class="small mono" text-anchor="start">8f 2a 91 …</text>
+          <path d="M218 274 H550" class="request" marker-end="url(#d7-request)"/>
+          <text x="378" y="255" class="small" text-anchor="middle">復号を依頼</text>
+          <rect x="557" y="252" width="167" height="54" rx="10" class="operation"/>
+          <text x="640" y="286" class="small bold" text-anchor="middle">鍵を使って復号</text>
+          <path d="M627 204 V245" class="key-line"/>
+          <rect x="52" y="366" width="242" height="43" rx="5" class="packet"/>
+          <text x="65" y="393" class="mono data-label" text-anchor="start">password=demo</text>
+          <path d="M640 311 V387 H300" class="data" marker-end="url(#d7-data)"/>
+          <text x="393" y="414" class="data-label bold" text-anchor="middle">平文が戻る</text>
+          <text x="401" y="464" class="small" text-anchor="middle">復号を依頼する権限と、鍵の使用条件を満たす場合</text>
+        </svg>
+      </div>
+      <figcaption>青は復号の依頼、橙は返ってくる平文です。アプリ内に入り込んだコードもこの平文に届きうるため、鍵素材の保護と鍵の使用制限を分けて考えます。TEE / StrongBox の利用有無は端末によります。</figcaption>
     </figure>
 
     <div class="qa">

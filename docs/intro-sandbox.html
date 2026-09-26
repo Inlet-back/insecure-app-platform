@@ -103,81 +103,95 @@
 
   <p>3つの答えに出てきた「箱」には実体があります。</p>
 
-  <figure class="fig">
-    <svg viewBox="0 0 720 300" role="img" aria-label="1台の端末の中で、アプリごとに別の箱（UID）に閉じ込められている図">
-      <rect class="plate" x="8" y="8" width="704" height="284" rx="10"/>
-      <text class="t-sm" x="24" y="32">1台の端末（Android）</text>
+  <figure class="fig mechanism-figure">
+      <h3>ファイルの場所と、読むアプリの UID が違う</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="ファイルの場所と、読むアプリの UID が違う。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 440" role="img" aria-labelledby="d1-title d1-desc">
+          <title id="d1-title">ファイルの場所と、読むアプリの UID が違う</title>
+          <desc id="d1-desc">左右の枠は別々の UID の所有領域。教材アプリは自分のファイルを読める。別アプリからの直接読み取りは教材アプリの領域の境界で拒否される。</desc>
+          <defs><marker id="d1-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d1-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d1-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="18" y="20" width="764" height="400" rx="24" class="device"/>
+          <text x="40" y="48" class="small" text-anchor="start">1台の Android 端末</text>
+          <rect x="43" y="73" width="318" height="310" rx="12" class="zone"/>
+          <rect x="442" y="73" width="312" height="310" rx="12" class="zone"/>
+          <text x="63" y="103" class="bold" text-anchor="start">教材アプリの領域</text>
+          <text x="63" y="127" class="small" text-anchor="start">所有者：UID A</text>
+          <text x="462" y="103" class="bold" text-anchor="start">別アプリの領域</text>
+          <text x="462" y="127" class="small" text-anchor="start">所有者：UID B</text>
+          <rect x="67" y="162" width="130" height="100" rx="12" class="app"/>
+          <rect x="115" y="176" width="34" height="29" rx="6" class="icon"/>
+          <path d="M122 185 h20 M122 194 h14" class="edge"/>
+          <text x="132" y="229" class="bold" text-anchor="middle">教材アプリ</text>
+          <text x="132" y="251" class="small" text-anchor="middle">UID A</text>
+          <path d="M213 216 h104 l24 24 v88 h-128 Z" class="file"/>
+          <path d="M317 216 v24 h24" class="edge"/>
+          <text x="225" y="255" class="small bold" text-anchor="start">保存ファイル</text>
+          <text x="225" y="280" class="small mono" text-anchor="start">password</text>
+          <text x="225" y="302" class="small mono" text-anchor="start">=&quot;demo&quot;</text>
+          <path d="M197 194 H277 V212" class="request" marker-end="url(#d1-request)"/>
+          <text x="227" y="181" class="small" text-anchor="start">読む</text>
+          <rect x="585" y="162" width="130" height="100" rx="12" class="app"/>
+          <rect x="633" y="176" width="34" height="29" rx="6" class="icon"/>
+          <path d="M640 185 h20 M640 194 h14" class="edge"/>
+          <text x="650" y="229" class="bold" text-anchor="middle">別アプリ</text>
+          <text x="650" y="251" class="small" text-anchor="middle">UID B</text>
+          <path d="M581 208 H374" class="request" marker-end="url(#d1-request)"/>
+          <circle cx="361" cy="208" r="14" class="stop-disc"/>
+          <path d="M355 202 l12 12 M367 202 l-12 12" class="stop-mark"/>
+          <text x="411" y="191" class="small" text-anchor="start">直接読む</text>
+          <text x="400" y="249" class="blocked bold" text-anchor="middle">拒否</text>
+          <text x="203" y="366" class="small" text-anchor="middle">自分の保存値は読める</text>
+          <text x="598" y="366" class="small" text-anchor="middle">別 UID のファイルは読めない</text>
+        </svg>
+      </div>
+      <figcaption>枠は各アプリと専用の保存領域、矢印は読み取り要求です。平文で保存されていても、別アプリから直接開けるとは限りません。</figcaption>
+    </figure>
 
-      <rect class="wall-fill" x="40" y="52" width="250" height="206" rx="8"/>
-      <rect class="wall" x="40" y="52" width="250" height="206" rx="8"/>
-      <text class="t-b" x="60" y="80">アプリ A</text>
-      <text class="t-sm mono" x="60" y="100">uid=10175 / u0_a175</text>
-      <rect class="card" x="60" y="116" width="210" height="60" rx="6"/>
-      <text class="t-sm mono" x="72" y="138">/data/data/&lt;pkgA&gt;/</text>
-      <text class="t-sm mono" x="72" y="158">shared_prefs/…xml</text>
-      <text class="t-sm" x="60" y="200">プロセスの隔離</text>
-      <text class="t-sm" x="60" y="220">メモリも別</text>
-
-      <rect class="wall-fill" x="430" y="52" width="250" height="206" rx="8"/>
-      <rect class="wall" x="430" y="52" width="250" height="206" rx="8"/>
-      <text class="t-b" x="450" y="80">アプリ B</text>
-      <text class="t-sm mono" x="450" y="100">uid=10177 / u0_a177</text>
-      <rect class="card" x="450" y="116" width="210" height="60" rx="6"/>
-      <text class="t-sm mono" x="462" y="138">/data/data/&lt;pkgB&gt;/</text>
-      <text class="t-sm mono" x="462" y="158">shared_prefs/…xml</text>
-      <text class="t-sm" x="450" y="200">A のファイルは</text>
-      <text class="t-sm" x="450" y="220">見えない</text>
-
-      <line class="block" x1="300" y1="146" x2="348" y2="146"/>
-      <line class="block" x1="356" y1="136" x2="374" y2="156"/>
-      <line class="block" x1="374" y1="136" x2="356" y2="156"/>
-      <text class="t-ng" x="316" y="124">読めない</text>
-    </svg>
-    <figcaption>
-      アプリを1つ入れるたびに、OS は Linux のユーザーを1人作って専用のデータ領域を割り当てます。
-      この壁はアプリが自分で立てたものではありません。
-    </figcaption>
-  </figure>
-
-  <figure class="fig">
-    <svg viewBox="0 0 720 180" role="img" aria-label="他のアプリのファイルを開こうとすると、DAC の照合と SELinux の照合を順に通り、どちらでも止められる図">
-      <rect class="plate" x="8" y="8" width="704" height="164" rx="10"/>
-
-      <rect class="card" x="22" y="58" width="118" height="62" rx="6"/>
-      <text class="t-b" x="38" y="84">アプリ A</text>
-      <text class="t-sm mono" x="38" y="106">open()</text>
-
-      <line class="flow" x1="140" y1="90" x2="172" y2="90"/>
-
-      <rect class="card" x="174" y="38" width="164" height="104" rx="6"/>
-      <text class="t-b" x="190" y="64">DAC</text>
-      <text class="t-sm" x="190" y="86">持ち主の UID を照合</text>
-      <text class="t-sm mono" x="190" y="106">u0_a175 ≠ u0_a177</text>
-      <text class="t-ng" x="190" y="130">ここで止まる</text>
-      <line class="block" x1="302" y1="114" x2="318" y2="130"/>
-      <line class="block" x1="318" y1="114" x2="302" y2="130"/>
-
-      <line class="flow dash" x1="338" y1="90" x2="368" y2="90"/>
-
-      <rect class="card" x="370" y="38" width="164" height="104" rx="6"/>
-      <text class="t-b" x="386" y="64">SELinux</text>
-      <text class="t-sm" x="386" y="86">ラベルを照合</text>
-      <text class="t-sm mono" x="386" y="106">app_data_file</text>
-      <text class="t-ng" x="386" y="130">ここでも止まる</text>
-      <line class="block" x1="498" y1="114" x2="514" y2="130"/>
-      <line class="block" x1="514" y1="114" x2="498" y2="130"/>
-
-      <line class="flow dash" x1="534" y1="90" x2="564" y2="90"/>
-
-      <rect class="card" x="566" y="58" width="130" height="62" rx="6"/>
-      <text class="t-b" x="582" y="84">アプリ B</text>
-      <text class="t-sm mono" x="582" y="106">/data/data/…</text>
-    </svg>
-    <figcaption>
-      他のアプリのファイルを開こうとすると、持ち主の照合と、ラベルの照合を順に通ります。
-      どちらもカーネルの中の話で、アプリのコードは関係しません。
-    </figcaption>
-  </figure>
+  <figure class="fig mechanism-figure">
+      <h3>OS は「誰が・どのファイルを開くか」を照合する</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="OS は「誰が・どのファイルを開くか」を照合する。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 420" role="img" aria-labelledby="d2-title d2-desc">
+          <title id="d2-title">OS は「誰が・どのファイルを開くか」を照合する</title>
+          <desc id="d2-desc">DAC は UID や GID と所有者・権限を照合し、SELinux はセキュリティコンテキストとポリシーで判定する。必要な条件を満たさない要求にはファイルの内容を返さない。</desc>
+          <defs><marker id="d2-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d2-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d2-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="30" y="150" width="130" height="100" rx="12" class="app"/>
+          <rect x="78" y="164" width="34" height="29" rx="6" class="icon"/>
+          <path d="M85 173 h20 M85 182 h14" class="edge"/>
+          <text x="95" y="217" class="bold" text-anchor="middle">別アプリ</text>
+          <text x="95" y="239" class="small" text-anchor="middle">UID B</text>
+          <path d="M605 144 h143 l24 24 v88 h-167 Z" class="file"/>
+          <path d="M748 144 v24 h24" class="edge"/>
+          <text x="617" y="183" class="small bold" text-anchor="start">user_session.xml</text>
+          <text x="617" y="208" class="small mono" text-anchor="start">owner: UID A</text>
+          <text x="617" y="230" class="small mono" text-anchor="start">rw-rw----</text>
+          <path d="M163 185 H241" class="request" marker-end="url(#d2-request)"/>
+          <text x="181" y="166" class="small mono" text-anchor="start">open</text>
+          <rect x="253" y="62" width="300" height="294" rx="18" class="kernel"/>
+          <text x="275" y="90" class="bold" text-anchor="start">カーネルのアクセス制御</text>
+          <text x="281" y="133" class="small" text-anchor="start">UID / GID ↔ 所有者・権限</text>
+          <text x="281" y="157" class="bold" text-anchor="start">DAC</text>
+          <path d="M279 180 H525" class="separator"/>
+          <text x="281" y="213" class="small" text-anchor="start">プロセス ↔ ファイルのラベル</text>
+          <text x="281" y="237" class="bold" text-anchor="start">SELinux ポリシー</text>
+          <path d="M325 259 V279 H403 M482 259 V279 H403 V294" class="edge"/>
+          <circle cx="403" cy="312" r="14" class="stop-disc"/>
+          <path d="M397 306 l12 12 M409 306 l-12 12" class="stop-mark"/>
+          <text x="437" y="319" class="blocked bold" text-anchor="start">拒否</text>
+          <path d="M557 185 H600" class="ghost"/>
+          <text x="590" y="286" class="small" text-anchor="start">中身は渡らない</text>
+          <text x="401" y="392" class="small" text-anchor="middle">必要なアクセス条件のどれかが満たされなければ、読み取りは失敗</text>
+        </svg>
+      </div>
+      <figcaption>2つの判定材料を同じカーネル内に描いています。固定された判定順序を示す図ではありません。エラー表示だけで拒否の原因を断定しないでください。</figcaption>
+    </figure>
 
   <dl>
     <dt>UID（Linux ユーザー ID）</dt>
@@ -205,37 +219,67 @@
       Android で変わったのは、DAC が何を単位に照合するかのほうです。</dd>
   </dl>
 
-  <h2>3. 箱には4つの壊れ方がある</h2>
+  <h2>3. どの経路でデータに届くかを、4章で比べる</h2>
 
   <p>この教材の4章は、脆弱性の種類ではなく<b>どの境界が破れたか</b>で分けてあります。</p>
 
-  <figure class="fig">
-    <svg viewBox="0 0 720 250" role="img" aria-label="箱の4つの壊れ方と各章の対応">
-      <rect class="wall-fill" x="230" y="60" width="260" height="150" rx="8"/>
-      <rect class="wall" x="230" y="60" width="260" height="150" rx="8"/>
-      <text class="t-b" x="320" y="96">アプリの箱</text>
-      <rect class="card" x="262" y="112" width="196" height="46" rx="6"/>
-      <text class="t-sm mono" x="278" y="140">保存されたデータ</text>
-      <text class="t-sm" x="268" y="186">第1章：中の置き方</text>
-
-      <line class="flow" x1="150" y1="135" x2="228" y2="135"/>
-      <rect class="card" x="20" y="112" width="132" height="46" rx="6"/>
-      <text class="t" x="34" y="132">窓口から入る</text>
-      <text class="t-sm" x="34" y="150">第2章 IPC</text>
-
-      <line class="flow" x1="492" y1="135" x2="570" y2="135"/>
-      <rect class="card" x="568" y="112" width="132" height="46" rx="6"/>
-      <text class="t" x="582" y="132">外に出た通信</text>
-      <text class="t-sm" x="582" y="150">第3章 通信</text>
-
-      <line class="flow dash" x1="360" y1="40" x2="360" y2="58"/>
-      <rect class="card" x="270" y="8" width="180" height="34" rx="6"/>
-      <text class="t" x="286" y="30">箱ごと壊す（第4章）</text>
-    </svg>
-    <figcaption>
-      章の順番は、箱の中 → 箱に開いた口 → 箱の外 → 箱そのもの、と外側に広がっていきます。
-    </figcaption>
-  </figure>
+  <figure class="fig mechanism-figure">
+      <h3>4章は、同じデータをたどる4つの経路</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="4章は、同じデータをたどる4つの経路。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 509" role="img" aria-labelledby="d3-title d3-desc">
+          <title id="d3-title">4章は、同じデータをたどる4つの経路</title>
+          <desc id="d3-desc">端末内の対象アプリに保存ファイルと IPC の窓口があり、端末外のサーバへ通信する。第1章はファイル、第2章は窓口、第3章は通信、第4章はアプリからの鍵の使用を扱う。</desc>
+          <defs><marker id="d3-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d3-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d3-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="208" y="42" width="380" height="410" rx="25" class="device"/>
+          <text x="231" y="72" class="small" text-anchor="start">Android 端末</text>
+          <rect x="280" y="109" width="278" height="220" rx="12" class="zone"/>
+          <text x="300" y="137" class="bold" text-anchor="start">対象アプリ</text>
+          <path d="M383 173 h127 l24 24 v88 h-151 Z" class="file"/>
+          <path d="M510 173 v24 h24" class="edge"/>
+          <text x="395" y="212" class="small bold" text-anchor="start">保存ファイル</text>
+          <text x="395" y="237" class="small mono" text-anchor="start">password</text>
+          <text x="395" y="259" class="small mono" text-anchor="start">=&quot;demo&quot;</text>
+          <circle cx="280" cy="221" r="26" class="port"/>
+          <text x="280" y="227" class="small bold" text-anchor="middle">IPC</text>
+          <circle cx="86" cy="181" r="12" class="person"/>
+          <path d="M63 226 v-12 q0 -17 23 -17 q23 0 23 17 v12 Z" class="person"/>
+          <text x="86" y="250" class="small bold" text-anchor="middle">別アプリ</text>
+          <path d="M121 222 H250" class="request" marker-end="url(#d3-request)"/>
+          <circle cx="157" cy="195" r="12" class="number-disc"/>
+          <text x="157" y="200" class="number" text-anchor="middle">2</text>
+          <text x="32" y="290" class="bold" text-anchor="start">窓口を呼ぶ</text>
+          <text x="32" y="313" class="small" text-anchor="start">第2章</text>
+          <path d="M339 157 H455 V169" class="request" marker-end="url(#d3-request)"/>
+          <circle cx="339" cy="185" r="12" class="number-disc"/>
+          <text x="339" y="190" class="number" text-anchor="middle">1</text>
+          <text x="299" y="307" class="small" text-anchor="start">第1章：ファイルを読む</text>
+          <rect x="650" y="99" width="109" height="148" rx="12" class="server"/>
+          <path d="M665 127 H745 M665 145 H745 M665 163 H745" class="edge"/>
+          <text x="704" y="275" class="bold" text-anchor="middle">サーバ</text>
+          <path d="M559 157 H645" class="request" marker-end="url(#d3-request)"/>
+          <circle cx="609" cy="128" r="12" class="number-disc"/>
+          <text x="609" y="133" class="number" text-anchor="middle">3</text>
+          <text x="685" y="305" class="small" text-anchor="middle">第3章：通信を見る</text>
+          <rect x="410" y="355" width="94" height="86" rx="9" class="chip"/>
+          <rect x="424" y="370" width="66" height="56" rx="5" class="chip-core"/>
+          <path d="M428 355 v-9 M428 441 v9" class="edge"/>
+          <path d="M448 355 v-9 M448 441 v9" class="edge"/>
+          <path d="M468 355 v-9 M468 441 v9" class="edge"/>
+          <path d="M488 355 v-9 M488 441 v9" class="edge"/>
+          <circle cx="439" cy="398" r="11" class="key-shape"/>
+          <path d="M450 398 h38 m-8 0 v11 m-12 -11 v8" class="key-line"/>
+          <path d="M363 310 V382 H400" class="request" marker-end="url(#d3-request)"/>
+          <circle cx="336" cy="367" r="12" class="number-disc"/>
+          <text x="336" y="372" class="number" text-anchor="middle">4</text>
+          <text x="390" y="481" class="bold" text-anchor="middle">第4章：鍵を使って復号する</text>
+        </svg>
+      </div>
+      <figcaption>①保存ファイル、②IPC の戻り値、③通信の本文、④復号した平文。各章で「どこから何を取得するか」を変えて確かめます。</figcaption>
+    </figure>
 
   <table>
     <tr><th>章</th><th>箱の話でいうと</th><th>実体</th></tr>

@@ -48,45 +48,48 @@
     この章で見るのは、その普通の保存がどこに置かれて、<b>そこに誰が手を伸ばせるのか</b>のほうです。</p>
     <details class="hint chapter-detail">
       <summary>仕組みを詳しく読む（図・問答・用語）</summary>
-    <figure class="fig">
-      <svg viewBox="0 0 720 270" role="img" aria-label="アプリのファイルに届くまでに、見えるか・権限があるか・型が許すかの3つを順に通ることを示した図">
-        <rect class="plate" x="180" y="40" width="118" height="190" rx="8"/>
-        <text class="t-b" x="194" y="68">① そもそも誰か</text>
-        <text class="t-sm" x="194" y="88">UID の分離</text>
-
-        <rect class="plate" x="318" y="40" width="118" height="190" rx="8"/>
-        <text class="t-b" x="332" y="68">② 権限があるか</text>
-        <text class="t-sm" x="332" y="88">Linux の所有権</text>
-
-        <rect class="plate" x="456" y="40" width="118" height="190" rx="8"/>
-        <text class="t-b" x="470" y="68">③ 型が許すか</text>
-        <text class="t-sm" x="470" y="88">SELinux</text>
-
-        <rect class="wall" x="596" y="40" width="108" height="190" rx="8"/>
-        <text class="t-b" x="610" y="68">ファイル</text>
-        <text class="t-sm mono" x="610" y="88">user_session</text>
-
-        <rect class="card" x="16" y="118" width="140" height="46" rx="6"/>
-        <text class="t" x="30" y="140">別のアプリ</text>
-        <text class="t-sm" x="30" y="158">別の UID</text>
-        <line class="block" x1="156" y1="141" x2="184" y2="141"/>
-        <line class="block" x1="192" y1="131" x2="212" y2="151"/>
-        <line class="block" x1="212" y1="131" x2="192" y2="151"/>
-        <text class="t-ng" x="224" y="146">届かない</text>
-
-        <rect class="card" x="16" y="176" width="140" height="46" rx="6"/>
-        <text class="t" x="30" y="198">そのアプリ自身</text>
-        <text class="t-sm" x="30" y="216">run-as も同じ</text>
-        <line class="pass" x1="156" y1="199" x2="590" y2="199"/>
-        <polygon points="594,199 584,194 584,204" fill="var(--success)"/>
-        <text class="t-ok" x="470" y="191">通る</text>
-
-        <text class="t-sm" x="16" y="258">3つとも OS 側の仕組みです。アプリのコードは1行も関与していません。</text>
-      </svg>
-      <figcaption>
-        アプリのファイルに手を伸ばすと、届く前に3つを順に確かめられます。
-        どこで止まったかによって、返ってくるエラーが変わります。
-      </figcaption>
+    <figure class="fig mechanism-figure">
+      <h3>別アプリの要求は止まり、自分のアプリには保存値が戻る</h3>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="別アプリの要求は止まり、自分のアプリには保存値が戻る。狭い画面では横にスクロールできます">
+        <svg class="mechanism" viewBox="0 0 800 459" role="img" aria-labelledby="d4-title d4-desc">
+          <title id="d4-title">別アプリの要求は止まり、自分のアプリには保存値が戻る</title>
+          <desc id="d4-desc">UID B の別アプリから保存ファイルへの読み取りは領域の境界で拒否される。UID A の教材アプリは同じ領域内のファイルを読み、保存値を受け取る。</desc>
+          <defs><marker id="d4-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="request-head"/></marker><marker id="d4-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="data-head"/></marker><marker id="d4-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 Z" class="muted-head"/></marker>
+          </defs>
+          <rect x="350" y="36" width="408" height="353" rx="12" class="zone"/>
+          <text x="371" y="65" class="bold" text-anchor="start">教材アプリと専用の保存領域</text>
+          <text x="371" y="88" class="small" text-anchor="start">所有者：UID A</text>
+          <rect x="34" y="80" width="130" height="100" rx="12" class="app"/>
+          <rect x="82" y="94" width="34" height="29" rx="6" class="icon"/>
+          <path d="M89 103 h20 M89 112 h14" class="edge"/>
+          <text x="99" y="147" class="bold" text-anchor="middle">別アプリ</text>
+          <text x="99" y="169" class="small" text-anchor="middle">UID B</text>
+          <path d="M170 125 H333" class="request" marker-end="url(#d4-request)"/>
+          <circle cx="350" cy="125" r="14" class="stop-disc"/>
+          <path d="M344 119 l12 12 M356 119 l-12 12" class="stop-mark"/>
+          <text x="205" y="106" class="small" text-anchor="start">直接読む</text>
+          <text x="222" y="158" class="blocked bold" text-anchor="start">拒否</text>
+          <path d="M554 119 h154 l24 24 v88 h-178 Z" class="file"/>
+          <path d="M708 119 v24 h24" class="edge"/>
+          <text x="566" y="158" class="small bold" text-anchor="start">user_session.xml</text>
+          <text x="566" y="183" class="small mono" text-anchor="start">username=demo</text>
+          <text x="566" y="205" class="small mono" text-anchor="start">password=demo</text>
+          <rect x="382" y="252" width="130" height="100" rx="12" class="app"/>
+          <rect x="430" y="266" width="34" height="29" rx="6" class="icon"/>
+          <path d="M437 275 h20 M437 284 h14" class="edge"/>
+          <text x="447" y="319" class="bold" text-anchor="middle">教材アプリ</text>
+          <text x="447" y="341" class="small" text-anchor="middle">UID A</text>
+          <path d="M487 246 V176 H548" class="request" marker-end="url(#d4-request)"/>
+          <text x="393" y="164" class="small" text-anchor="start">読み取り</text>
+          <path d="M645 237 V310 H518" class="data" marker-end="url(#d4-data)"/>
+          <text x="580" y="335" class="data-label bold" text-anchor="start">保存値</text>
+          <text x="401" y="432" class="small" text-anchor="middle">同じファイルでも、読み取り要求を出す UID が違う</text>
+        </svg>
+      </div>
+      <figcaption>青い矢印は読み取り要求、橙の矢印は返る値です。教材の run-as は debuggable な対象の UID で読む操作なので、別アプリの UID で読む場合と区別します。</figcaption>
     </figure>
 
     <div class="qa">

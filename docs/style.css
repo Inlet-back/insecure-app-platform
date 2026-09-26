@@ -1119,3 +1119,56 @@ html.os-ready [data-os]:not(.is-on) { display: none; }
   margin: 1.1rem 0 1.8rem;
   font-size: 0.9rem;
 }
+
+/* Mechanism diagrams: geometry encodes ownership, location and data flow. */
+.mechanism-figure { overflow: visible; }
+.mechanism-figure h3 { margin-bottom: 0.65rem; font-size: 1.12rem; line-height: 1.6; }
+.diagram-viewport { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.diagram-viewport:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.fig svg.mechanism { display: block; width: 100%; min-width: 720px; max-width: none; margin: 0; }
+.mechanism text { fill: var(--text); font-size: 17px; font-family: inherit; }
+.mechanism .small { font-size: 15px; }
+.mechanism .bold { font-weight: 700; }
+.fig .mechanism .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; }
+.mechanism .device { fill: var(--bg-alt); stroke: var(--text-muted); stroke-width: 2; }
+.mechanism .zone { fill: var(--bg); stroke: var(--accent); stroke-width: 2.5; }
+.mechanism .entity, .mechanism .app, .mechanism .server, .mechanism .terminal, .mechanism .operation { fill: var(--bg); stroke: var(--text-muted); stroke-width: 1.8; }
+.mechanism .file { fill: var(--bg); stroke: var(--text); stroke-width: 1.8; }
+.mechanism .icon, .mechanism .person { fill: var(--bg-alt); stroke: var(--text); stroke-width: 1.8; }
+.mechanism .edge, .mechanism .leader { fill: none; stroke: var(--text-muted); stroke-width: 1.5; }
+.mechanism .leader { stroke-dasharray: 3 5; }
+.mechanism .separator { fill: none; stroke: var(--border); }
+.mechanism .request { fill: none; stroke: var(--accent); stroke-width: 2.8; }
+.mechanism .request-head { fill: var(--accent); }
+.mechanism .data { fill: none; stroke: #b75b12; stroke-width: 3; }
+.mechanism .data-head { fill: #b75b12; }
+.mechanism .data-label { fill: #a34c09; }
+.mechanism .muted { fill: none; stroke: var(--text-muted); stroke-width: 2; }
+.mechanism .muted-head { fill: var(--text-muted); }
+.mechanism .ghost { fill: none; stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 5 6; }
+.mechanism .stop-disc { fill: var(--bg); stroke: var(--danger); stroke-width: 2; }
+.mechanism .stop-mark { fill: none; stroke: var(--danger); stroke-width: 2.5; }
+.mechanism .blocked { fill: var(--danger); }
+.mechanism .kernel, .mechanism .vault { fill: var(--bg-alt); stroke: var(--text-muted); stroke-width: 2; }
+.mechanism .opening { fill: var(--bg); stroke: none; }
+.mechanism .port { fill: var(--bg); stroke: var(--accent); stroke-width: 3; }
+.mechanism .number-disc, .mechanism .inside-dot { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.mechanism .number { fill: #fff; font-size: 14px; font-weight: 700; }
+.mechanism .packet { fill: var(--bg); stroke: #b75b12; stroke-width: 1.5; }
+.mechanism .tunnel { fill: var(--bg-alt); stroke: var(--accent); stroke-width: 2; }
+.mechanism .cipher { fill: var(--accent); paint-order: stroke; stroke: var(--bg-alt); stroke-width: 8; stroke-linejoin: round; }
+.mechanism .lock-body, .mechanism .chip { fill: var(--bg); stroke: var(--accent); stroke-width: 2; }
+.mechanism .lock-shackle { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.mechanism .lock-hole { fill: var(--accent); }
+.mechanism .chip-core { fill: var(--bg-alt); stroke: var(--border); }
+.mechanism .key-shape { fill: none; stroke: #b75b12; stroke-width: 3; }
+.mechanism .key-line { fill: none; stroke: #b75b12; stroke-width: 3; }
+@media (max-width: 760px) {
+  .diagram-viewport::after { content: "図は左右にスクロールできます →"; display: block; position: sticky; left: 0; padding: 0.5rem 0.8rem; color: var(--text-muted); font-size: 0.8rem; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .mechanism .data, .mechanism .key-shape, .mechanism .key-line, .mechanism .packet { stroke: #f6ad63; }
+  .mechanism .data-head, .mechanism .data-label { fill: #f6ad63; }
+  .mechanism .number { fill: #14171c; }
+}
